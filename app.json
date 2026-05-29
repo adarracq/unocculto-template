@@ -8,7 +8,8 @@
     "scheme": "unoccultotemplate",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.antoinecd.unoccultotemplate"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +18,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.antoinecd.unoccultotemplate"
     },
     "web": {
       "output": "static",
@@ -25,6 +27,17 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "@maplibre/maplibre-react-native",
+        {
+          "android": {
+            "v11": true
+          },
+          "ios": {
+            "v11": true
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -39,6 +52,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2fd68470-fb45-41db-9bdc-b694933be91f"
+      }
     }
   }
 }
