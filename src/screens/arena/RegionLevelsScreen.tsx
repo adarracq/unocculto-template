@@ -94,13 +94,13 @@ export const RegionLevelsScreen = () => {
     };
 
     return (
-        <LinearGradient colors={[THEME.colors.background, '#000000']} style={styles.container}>
+        <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.container}>
 
             <TouchableOpacity onPress={() => router.back()} style={styles.backArrow}>
                 <Ionicons name="arrow-back" size={24} color={THEME.colors.text.primary} />
             </TouchableOpacity>
 
-            <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 140 }} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={{ padding: 20, }} showsVerticalScrollIndicator={false}>
 
                 <View style={styles.header}>
                     <CyberText variant="h1" style={{ color: THEME.colors.text.primary }}>
@@ -177,7 +177,7 @@ export const RegionLevelsScreen = () => {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: { flex: 1, paddingTop: 60 },
     backArrow: { position: 'absolute', top: 60, left: 20, zIndex: 10 },
     header: { marginBottom: 20, justifyContent: 'flex-end', alignItems: 'flex-end' },
     section: { marginBottom: 20 },

@@ -6,7 +6,6 @@ import { Vibration } from 'react-native';
 
 export const functions = {
     getIconSource,
-    getRewardSource,
     getCategoriesource,
     getImageSource,
     shuffleArray,
@@ -23,164 +22,156 @@ export const functions = {
 function getIconSource(name: string) {
     switch (name) {
         case 'museum':
-            return require('@/app/assets/icons/museum.png');
+            return require('@/assets/icons/museum.png');
         case 'airplane-takeoff':
-            return require('@/app/assets/icons/airplane-takeoff.png');
+            return require('@/assets/icons/airplane-takeoff.png');
         case 'logo_white':
-            return require('@/app/assets/images/logo_white.png');
+            return require('@/assets/images/logo_white.png');
         case 'flag':
-            return require('@/app/assets/icons/flag.png');
+            return require('@/assets/icons/flag.png');
         case 'capital':
-            return require('@/app/assets/icons/capital.png');
+            return require('@/assets/icons/capital.png');
         case 'fuel':
-            return require('@/app/assets/icons/fuel.png');
+            return require('@/assets/icons/fuel.png');
         case 'target':
-            return require('@/app/assets/icons/target.png');
+            return require('@/assets/icons/target.png');
         case 'clock':
-            return require('@/app/assets/icons/clock.png');
+            return require('@/assets/icons/clock.png');
         case 'fingerprint':
-            return require('@/app/assets/icons/fingerprint.png');
+            return require('@/assets/icons/fingerprint.png');
         case 'error':
-            return require('@/app/assets/icons/error.png');
+            return require('@/assets/icons/error.png');
         case 'flight-ticket':
-            return require('@/app/assets/icons/flight-ticket.png');
+            return require('@/assets/icons/flight-ticket.png');
         case 'repeat':
-            return require('@/app/assets/icons/repeat.png');
+            return require('@/assets/icons/repeat.png');
         case 'gamepad':
-            return require('@/app/assets/icons/gamepad.png');
+            return require('@/assets/icons/gamepad.png');
         case 'profile':
-            return require('@/app/assets/icons/profile.png');
+            return require('@/assets/icons/profile.png');
         case 'cards':
-            return require('@/app/assets/icons/cards.png');
+            return require('@/assets/icons/cards.png');
         case 'duel':
-            return require('@/app/assets/icons/duel.png');
+            return require('@/assets/icons/duel.png');
         case 'books':
-            return require('@/app/assets/icons/books.png');
+            return require('@/assets/icons/books.png');
         case 'mail':
-            return require('@/app/assets/icons/mail.png');
+            return require('@/assets/icons/mail.png');
         case 'arrow-left':
-            return require('@/app/assets/icons/arrow-left.png');
+            return require('@/assets/icons/arrow-left.png');
         case 'arrow-right':
-            return require('@/app/assets/icons/arrow-right.png');
+            return require('@/assets/icons/arrow-right.png');
         case 'king':
-            return require('@/app/assets/icons/king.png');
+            return require('@/assets/icons/king.png');
         case 'student':
-            return require('@/app/assets/icons/student.png');
+            return require('@/assets/icons/student.png');
         case 'compass':
-            return require('@/app/assets/icons/compass.png');
+            return require('@/assets/icons/compass.png');
         case 'fire':
-            return require('@/app/assets/icons/fire.png');
+            return require('@/assets/icons/fire.png');
         case 'gem':
-            return require('@/app/assets/icons/gem.png');
+            return require('@/assets/icons/gem.png');
         case 'change':
-            return require('@/app/assets/icons/change.png');
+            return require('@/assets/icons/change.png');
         case 'lock':
-            return require('@/app/assets/icons/lock.png');
+            return require('@/assets/icons/lock.png');
         case 'check':
-            return require('@/app/assets/icons/check.png');
+            return require('@/assets/icons/check.png');
         case 'journey':
-            return require('@/app/assets/icons/journey.png');
+            return require('@/assets/icons/journey.png');
         case 'rocket':
-            return require('@/app/assets/icons/rocket.png');
+            return require('@/assets/icons/rocket.png');
         case 'globe':
-            return require('@/app/assets/icons/globe.png');
+            return require('@/assets/icons/globe.png');
         case 'paper_map':
-            return require('@/app/assets/icons/paper_map.png');
+            return require('@/assets/icons/paper_map.png');
         case 'close':
-            return require('@/app/assets/icons/close.png');
+            return require('@/assets/icons/close.png');
         case 'lightning':
-            return require('@/app/assets/icons/lightning.png');
+            return require('@/assets/icons/lightning.png');
         case 'coin':
-            return require('@/app/assets/icons/coin.png');
+            return require('@/assets/icons/coin.png');
         case 'people':
-            return require('@/app/assets/icons/people.png');
+            return require('@/assets/icons/people.png');
         case 'peoples':
-            return require('@/app/assets/icons/peoples.png');
+            return require('@/assets/icons/peoples.png');
         case 'wallet':
-            return require('@/app/assets/icons/wallet.png');
+            return require('@/assets/icons/wallet.png');
         case 'messages':
-            return require('@/app/assets/icons/messages.png');
+            return require('@/assets/icons/messages.png');
         default:
-            return require('@/app/assets/icons/none.png');
+            return require('@/assets/icons/none.png');
     }
 }
 
 function getImageSource(name: string) {
     switch (name) {
         case 'EUR':
-            return require('@/app/assets/continents/europe.png');
+            return require('@/assets/continents/europe.png');
         case 'ASI':
-            return require('@/app/assets/continents/asia.png');
+            return require('@/assets/continents/asia.png');
         case 'AFR':
-            return require('@/app/assets/continents/africa.png');
+            return require('@/assets/continents/africa.png');
         case 'AME':
-            return require('@/app/assets/continents/america.png');
+            return require('@/assets/continents/america.png');
         case 'OCE':
-            return require('@/app/assets/continents/oceania.png');
+            return require('@/assets/continents/oceania.png');
         case 'WLD':
-            return require('@/app/assets/continents/world.png');
+            return require('@/assets/continents/world.png');
         default:
-            return require('@/app/assets/icons/none.png');
+            return require('@/assets/icons/none.png');
     }
 }
 
 function getCategoriesource(name: string) {
     switch (name) {
         case 'lotus':
-            return require('@/app/assets/categories/lotus.png');
+            return require('@/assets/categories/lotus.png');
         case 'atom':
-            return require('@/app/assets/categories/atom.png');
+            return require('@/assets/categories/atom.png');
         case 'chess':
-            return require('@/app/assets/categories/chess.png');
+            return require('@/assets/categories/chess.png');
         case 'theatre':
-            return require('@/app/assets/categories/theatre.png');
+            return require('@/assets/categories/theatre.png');
         case 'owl':
-            return require('@/app/assets/categories/owl.png');
+            return require('@/assets/categories/owl.png');
         case 'puzzle':
-            return require('@/app/assets/categories/puzzle.png');
+            return require('@/assets/categories/puzzle.png');
         case 'third-eye':
-            return require('@/app/assets/categories/third-eye.png');
+            return require('@/assets/categories/third-eye.png');
         case 'heart-line':
-            return require('@/app/assets/categories/heart-line.png');
+            return require('@/assets/categories/heart-line.png');
         case 'greek-helmet':
-            return require('@/app/assets/categories/greek-helmet.png');
+            return require('@/assets/categories/greek-helmet.png');
         case 'globe':
-            return require('@/app/assets/categories/globe.png');
+            return require('@/assets/categories/globe.png');
         case 'chart':
-            return require('@/app/assets/categories/chart.png');
+            return require('@/assets/categories/chart.png');
         case 'gavel':
-            return require('@/app/assets/categories/gavel.png');
+            return require('@/assets/categories/gavel.png');
         case 'palette':
-            return require('@/app/assets/categories/palette.png');
+            return require('@/assets/categories/palette.png');
         case 'music-note':
-            return require('@/app/assets/categories/music-note.png');
+            return require('@/assets/categories/music-note.png');
         case 'open-book':
-            return require('@/app/assets/categories/open-book.png');
+            return require('@/assets/categories/open-book.png');
         case 'film-reel':
-            return require('@/app/assets/categories/film-reel.png');
+            return require('@/assets/categories/film-reel.png');
         case 'sport':
-            return require('@/app/assets/categories/sport.png');
+            return require('@/assets/categories/sport.png');
         case 'lightbulb':
-            return require('@/app/assets/categories/lightbulb.png');
+            return require('@/assets/categories/lightbulb.png');
         case 'flask':
-            return require('@/app/assets/categories/flask.png');
+            return require('@/assets/categories/flask.png');
         case 'compass':
-            return require('@/app/assets/categories/compass.png');
+            return require('@/assets/categories/compass.png');
         case 'leaf':
-            return require('@/app/assets/categories/leaf.png');
+            return require('@/assets/categories/leaf.png');
         default:
-            return require('@/app/assets/icons/none.png');
+            return require('@/assets/icons/none.png');
     }
 }
 
-function getRewardSource(name: string) {
-    switch (name) {
-        case 'passport':
-            return require('@/app/assets/rewards/passport.png');
-        default:
-            return require('@/app/assets/icons/none.png');
-    }
-}
 
 function shuffleArray<T>(array: T[]): T[] {
     const newArray = [...array];

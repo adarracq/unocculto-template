@@ -1,4 +1,4 @@
-import { getFlagImage, MICRO_ISLANDS_STATES } from '@/data/Countries';
+import { getFlagImage, MICRO_STATES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { useMemo } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
@@ -35,7 +35,7 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
 
     // --- LOGIQUE CAMERA (Focus Auto) ---
     const cameraTarget = useMemo(() => {
-        const isMicro = MICRO_ISLANDS_STATES.includes(target.code);
+        const isMicro = MICRO_STATES.includes(target.code);
         return {
             center: [target.longitude || 0, target.latitude || 0] as [number, number],
             zoom: isMicro ? 5 : 3

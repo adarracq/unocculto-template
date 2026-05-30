@@ -37,13 +37,33 @@ export default function TrainingSelector({ onSelect }: SelectorProps) {
                     color="#4AE290" // Vert
                     onPress={() => onSelect('capital')}
                 />
+                <TrainingCard
+                    title="VILLES"
+                    subtitle="Connaissances"
+                    icon="location-sharp"
+                    color="#E2904A" // Orange
+                    onPress={() => { }}
+                    isLocked={true}
+                />
+                <TrainingCard
+                    title="EAUX"
+                    subtitle="Localisation"
+                    icon="water"
+                    color="#4AE2E2" // Cyan
+                    onPress={() => { }}
+                    isLocked={true}
+                />
             </View>
         </View>
     );
 }
 
-const TrainingCard = ({ title, subtitle, icon, color, onPress }: any) => {
+const TrainingCard = ({ title, subtitle, icon, color, onPress, isLocked }: any) => {
     const scaleValue = useRef(new Animated.Value(1)).current;
+    if (isLocked) {
+        onPress = () => { };
+        color = THEME.colors.text.disabled;
+    }
 
     const handlePressIn = () => {
         Animated.spring(scaleValue, { toValue: 0.96, useNativeDriver: true, speed: 20 }).start();
@@ -56,7 +76,7 @@ const TrainingCard = ({ title, subtitle, icon, color, onPress }: any) => {
     return (
         <Animated.View style={{ transform: [{ scale: scaleValue }], width: '100%' }}>
             <Pressable
-                style={styles.card}
+                style={[styles.card, isLocked && { opacity: 0.5 }]}
                 onPress={onPress}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
@@ -73,7 +93,7 @@ const TrainingCard = ({ title, subtitle, icon, color, onPress }: any) => {
                     <CyberText variant="bodySmall" colorType="secondary">{subtitle}</CyberText>
                 </View>
 
-                <Ionicons name="chevron-forward" size={16} color={color} />
+                <Ionicons name={isLocked ? "lock-closed" : "chevron-forward"} size={16} color={color} />
             </Pressable>
         </Animated.View>
     );

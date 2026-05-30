@@ -2,6 +2,7 @@ import { CyberText } from '@/components/atoms/CyberText';
 import { useArenaStore } from '@/store/useArenaStore';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import RegionBadge from './components/RegionBadge';
@@ -51,7 +52,8 @@ export const LicenseMapScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.container} >
+
             {/* Header Profil & Bouton retour */}
             <TouchableOpacity onPress={() => router.back()} style={styles.backArrow}>
                 <Ionicons name="arrow-back" size={24} color={THEME.colors.text.primary} />
@@ -96,24 +98,24 @@ export const LicenseMapScreen = () => {
                     </View>
                 </View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: THEME.colors.background // Fond unifié OLED
+        backgroundColor: THEME.colors.background,
+        paddingTop: 60,
     },
     backArrow: {
         position: 'absolute',
-        top: 60, // Ajuster selon le Safe Area
+        top: 60,
         left: 20,
         zIndex: 10
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 100, // Espace pour la flèche
         flexGrow: 1
     },
     header: {

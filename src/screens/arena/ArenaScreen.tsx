@@ -1,37 +1,45 @@
+import { CyberText } from '@/components/atoms/CyberText';
 import { THEME } from '@/theme/theme';
-import { useRouter } from 'expo-router'; // Import du routeur
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
 
+import { getDailyMission } from '@/utils/DailyGameManager';
 import DailyMissionCard from './components/DailyMissionCard';
-import LeaderboardCard from './components/LeaderboardCard';
 import TrainingSelector from './components/TrainingSelector';
 
 export const ArenaScreen = () => {
-    const router = useRouter(); // Initialisation du routeur
+    const router = useRouter();
 
-    const mockDailyMission = {
-        title: "OPÉRATION : AFRIQUE",
-        type: "DRAPEAUX",
-        bonus: "XP x2",
-        regionId: "AFR"
-    };
+    // 1. Récupération dynamique de la mission du jour
+    // On utilise useMemo pour éviter de recalculer la date à chaque re-rendu de l'écran
+    const dailyMission = useMemo(() => getDailyMission(), []);
 
-    const mockLocalRecords = [
-        { rank: 1, pseudo: "Europe (Niv. 3)", time: "00:14", accuracy: 100, isUser: true },
-        { rank: 2, pseudo: "Asie (Niv. 2)", time: "00:21", accuracy: 95, isUser: false },
-        { rank: 3, pseudo: "Afrique (Niv. 1)", time: "00:35", accuracy: 80, isUser: false },
-    ];
 
     const handleDailyMission = () => {
-        // Redirection vers le mode lié à la mission du jour
+        // 2. Redirection dynamique basée sur la fonction getDailyMission
         router.push({
             pathname: '/arena/license-map',
-            params: { mode: 'flag' } // La mission du jour est sur les drapeaux
+            params: {
+                mode: dailyMission.modeId,
+                regionId: dailyMission.regionId,
+                isDailyBonus: 'true' // On passe un flag pour doubler l'XP en fin de partie
+            }
+        });
+        router.push({
+            pathname: '/arena/game',
+            params: {
+                regionId: dailyMission.regionId,
+                mode: dailyMission.modeId,
+                level: '1', // On force le niveau 1 (QCM) pour la mission quotidienne (ou 2, 3 selon votre choix)
+                isDailyBonus: 'true',
+                alreadyDone: 'false'
+            }
         });
     };
 
     const handleSelectMode = (mode: 'country' | 'flag' | 'capital') => {
-        // Envoi du mode choisi en paramètre à l'écran de la carte
         router.push({
             pathname: '/arena/license-map',
             params: { mode: mode }
@@ -40,26 +48,25 @@ export const ArenaScreen = () => {
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.scrollContent}>
 
+                <CyberText variant="h1" style={{ paddingBottom: 20 }}>
+                    Entraînement
+                </CyberText>
+
+                {/* 3. Injection des données dynamiques dans la carte */}
                 <DailyMissionCard
-                    title={mockDailyMission.title}
-                    type={mockDailyMission.type}
-                    bonus={mockDailyMission.bonus}
-                    regionId={mockDailyMission.regionId}
+                    title={dailyMission.title}
+                    type={dailyMission.typeLabel} // Remplace l'ancien "type"
+                    bonus={dailyMission.bonus}
+                    regionId={dailyMission.regionId}
                     onPress={handleDailyMission}
                 />
 
                 <TrainingSelector onSelect={handleSelectMode} />
 
-                <LeaderboardCard
-                    title="RECORDS LOCAUX"
-                    subTitle="MEILLEURS TEMPS"
-                    data={mockLocalRecords}
-                    limit={10}
-                />
 
-            </ScrollView>
+            </LinearGradient>
         </View>
     );
 };

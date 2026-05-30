@@ -1,217 +1,146 @@
 // src/screens/home/HomeScreen.tsx
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { CyberText } from '@/components/atoms/CyberText';
-import { useLearningStore } from '@/store/useLearningStore'; // Pour le SRS guidé
+import MyButton from '@/components/atoms/MyButton';
+import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet';
+import WorldProgressMap from '@/components/organisms/WorldProgressMap';
+import LearningSheetContent from './components/LearningSheetContent';
+import RevisionSheetContent from './components/RevisionSheetContent'; // (Le composant du message précédent)
+
+import { ALL_COUNTRIES } from '@/data/Countries';
+import { useLearningStore } from '@/store/useLearningStore';
 import { useUserStore } from '@/store/useUserStore';
 import { THEME } from '@/theme/theme';
-import { functions } from '@/utils/Functions';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-const REGION_NAMES: Record<string, string> = {
-    EUR: 'EUROPE', ASI: 'ASIE', AFR: 'AFRIQUE', AME: 'AMÉRIQUES', OCE: 'OCÉANIE', WLD: 'MONDE'
-};
 
 export default function HomeScreen() {
     const router = useRouter();
 
-    // Connexion aux stores locaux (100% réactifs et hors-ligne)
     const pseudo = useUserStore((state) => state.pseudo);
+    const dayStreak = 12; // Mock temporaire
+
     const currentZoneId = useLearningStore((state) => state.currentLearningZone);
     const setCurrentLearningZone = useLearningStore((state) => state.setCurrentLearningZone);
-
-    // Récupération des compteurs via nos sélecteurs du store de mémoire
-    const urgentCount = useLearningStore((state) => state.getUrgentCount());
-    const consolidationCount = useLearningStore((state) => state.getConsolidationCount());
-    const masteredCount = useLearningStore((state) => state.getMasteredCount());
     const remainingCount = useLearningStore((state) => state.getRemainingCount());
+    const memoryMap = useLearningStore((state) => state.memoryMap);
 
-    const currentZoneName = REGION_NAMES[currentZoneId] || currentZoneId;
+    // Calculs GLOBAUX pour la carte et la modale de révision (Plus restreint à la zone !)
+    const { urgentList, consolidatedList, masteredList } = useMemo(() => {
+        const now = Date.now();
+        const urgents: string[] = [];
+        const consols: string[] = [];
+        const masters: string[] = [];
 
-    // Handler pour basculer de continent cycliquement (Simulation d'un sélecteur rapide)
-    const handleToggleZone = () => {
-        const zones = ['EUR', 'ASI', 'AFR', 'AME', 'OCE'];
-        const currentIndex = zones.indexOf(currentZoneId);
-        const nextIndex = (currentIndex + 1) % zones.length;
-        setCurrentLearningZone(zones[nextIndex]);
-    };
+        ALL_COUNTRIES.forEach(c => {
+            const mem = memoryMap[c.code];
+            if (!mem || mem.box === 0) return;
+            if (mem.box === 5) {
+                masters.push(c.code);
+            } else if (mem.nextReviewDate <= now) {
+                urgents.push(c.code);
+            } else {
+                consols.push(c.code);
+            }
+        });
+        return { urgentList: urgents, consolidatedList: consols, masteredList: masters };
+    }, [memoryMap]);
 
-    const handleDiscoverBatch = () => {
-        const nextBatch = useLearningStore.getState().getNewCountriesBatch(5);
+    const urgentCount = urgentList.length;
+
+    const [activeSheet, setActiveSheet] = useState<'learning' | 'revision' | null>(null);
+
+    const handleStartLearning = () => {
+        const nextBatch = useLearningStore.getState().getNewCountriesBatch(4);
         if (nextBatch.length > 0) {
-            // On inscrit le lot de 5 pays en Boîte 1 dans le store
-            useLearningStore.getState().startDiscoverySession(nextBatch);
-
+            setActiveSheet(null);
             router.push({ pathname: '/learn/discovery', params: { batch: nextBatch.join(',') } });
-        }
-    };
-
-    const handleStartRevision = () => {
-        if (urgentCount > 0) {
-            console.log("Lancement de la boucle de révision Leitner");
-            // router.push('/learn/revision');
         }
     };
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            {/* CARTE EN BACKGROUND */}
+            <WorldProgressMap validCountries={ALL_COUNTRIES.map(c => c.code)} urgentCountries={urgentList} consolidatedCountries={consolidatedList} masteredCountries={masteredList} isBackground />
 
-                {/* 1. HEADER IDENTITAIRE */}
-                <View style={styles.header}>
-                    <View>
-                        <CyberText variant="caps" colorType="secondary" style={{ letterSpacing: 2 }}>
-                            AGENT D'EXPLORATION
-                        </CyberText>
-                        <CyberText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 4 }}>
-                            Bonjour, {pseudo}
-                        </CyberText>
+            <SafeAreaView style={styles.hudContainer} pointerEvents="box-none">
+
+                {/* --- HEADER (Streak & Legend) --- */}
+                <View style={styles.topHeader} pointerEvents="box-none">
+                    <View style={styles.streakBadge}>
+                        <Ionicons name="flame" size={16} color={THEME.colors.danger} style={{ marginRight: 6 }} />
+                        <CyberText variant="h2" style={{ fontSize: 14, color: THEME.colors.danger }}>{dayStreak}</CyberText>
                     </View>
-                    <TouchableOpacity style={styles.profileBtn}>
-                        <Ionicons name="person" size={20} color={THEME.colors.text.primary} />
+
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => setActiveSheet('revision')} style={styles.legendBadge}>
+                        <View style={styles.legendItem}>
+                            <Ionicons name="warning" size={16} color={THEME.colors.danger} />
+                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.danger }]}>{urgentCount}</CyberText>
+                        </View>
+                        <View style={styles.legendItem}>
+                            <Ionicons name="sync" size={16} color={THEME.colors.secondary} />
+                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.secondary }]}>{consolidatedList.length}</CyberText>
+                        </View>
+                        <View style={styles.legendItem}>
+                            <Ionicons name="shield-checkmark" size={16} color={THEME.colors.success} />
+                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.success }]}>{masteredList.length}</CyberText>
+                        </View>
                     </TouchableOpacity>
                 </View>
 
-                {/* 2. COMPOSANT MONOLITHIQUE : SÉLECTEUR DE ZONE */}
-                <CyberText variant="caps" colorType="secondary" style={styles.sectionLabel}>
-                    ZONE D'ÉTUDE ACTUELLE
-                </CyberText>
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={handleToggleZone}
-                    style={styles.heroCard}
-                >
-                    <LinearGradient
-                        colors={[THEME.colors.primary + '15', 'transparent']}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                        style={StyleSheet.absoluteFill}
+                {/* Espace libre pour scroller la carte */}
+                <View style={{ flex: 1 }} pointerEvents="none" />
+
+                {/* --- ACTIONS MINIMALISTES (En bas) --- */}
+                <View style={styles.bottomActions} pointerEvents="box-none">
+                    <MyButton
+                        title="APPRENTISSAGE"
+                        subtitle={`Zone actuelle : ${currentZoneId}`}
+                        iconLeft="book"
+                        iconRight="arrow-forward"
+                        onPress={() => setActiveSheet('learning')}
+                        style={{ marginBottom: 12 }}
                     />
 
-                    <View style={styles.watermarkContainer}>
-                        <Image
-                            source={functions.getImageSource(currentZoneId)}
-                            style={styles.watermark}
-                            resizeMode="contain"
-                        />
-                    </View>
-
-                    <View style={styles.heroContent}>
-                        <View>
-                            <View style={styles.badge}>
-                                <View style={[styles.dot, { backgroundColor: THEME.colors.primary }]} />
-                                <CyberText variant="caps" style={{ color: THEME.colors.primary, fontSize: 10 }}>
-                                    PARCOURS ACTIF
-                                </CyberText>
-                            </View>
-                            <CyberText variant="h1" style={{ fontSize: 40, marginTop: 8 }}>
-                                {currentZoneName}
-                            </CyberText>
-                        </View>
-                        <Ionicons name="swap-horizontal" size={22} color={THEME.colors.text.secondary} />
-                    </View>
-                </TouchableOpacity>
-
-                {/* 3. LE BOUTON MAÎTRE : INTENTION D'APPRENDRE */}
-                <TouchableOpacity
-                    activeOpacity={remainingCount > 0 ? 0.8 : 1}
-                    onPress={remainingCount > 0 ? handleDiscoverBatch : undefined}
-                    style={[styles.actionCard, remainingCount === 0 && { opacity: 0.5 }]}
-                >
-                    <LinearGradient
-                        colors={[THEME.colors.primary, '#A68A2C']}
-                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                        style={StyleSheet.absoluteFill}
-                    />
-                    <View style={styles.actionContent}>
-                        <View>
-                            <CyberText variant="h2" style={{ color: THEME.colors.background }}>
-                                {remainingCount > 0 ? "DÉCOUVRIR 5 PAYS" : "ZONE COMPLÉTÉE"}
-                            </CyberText>
-                            <CyberText variant="bodySmall" style={{ color: THEME.colors.background, opacity: 0.8 }}>
-                                {remainingCount} pays restants à cartographier en {currentZoneName.toLowerCase()}
-                            </CyberText>
-                        </View>
-                        <View style={styles.playIconWrapper}>
-                            <Ionicons
-                                name={remainingCount > 0 ? "eye" : "checkmark-done"}
-                                size={22}
-                                color={THEME.colors.primary}
-                            />
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {/* 4. LE DASHBOARD NEURAL (La boîte de Répétition Espacée) */}
-                <View style={styles.neuralHeader}>
-                    <CyberText variant="caps" colorType="secondary" style={styles.sectionLabel}>
-                        RÉSEAU NEURAL (MÉMOIRE)
-                    </CyberText>
+                    {/* Le bouton révision n'apparaît que s'il y a des urgences */}
                     {urgentCount > 0 && (
-                        <TouchableOpacity onPress={handleStartRevision}>
-                            <CyberText variant="caps" style={{ color: THEME.colors.danger }}>
-                                LIGNES D'URGENCE ACTIVE ▾
-                            </CyberText>
-                        </TouchableOpacity>
+                        <MyButton
+                            title="RÉVISIONS"
+                            subtitle={`${urgentCount} données critiques`}
+                            variant="danger"
+                            iconRight="arrow-forward"
+                            iconLeft="shield-checkmark"
+                            onPress={() => setActiveSheet('revision')}
+                        />
                     )}
                 </View>
 
-                <View style={styles.statsGrid}>
-                    {/* Colonne Urgent */}
-                    <TouchableOpacity
-                        activeOpacity={urgentCount > 0 ? 0.8 : 1}
-                        onPress={handleStartRevision}
-                        style={[styles.statBox, { borderColor: THEME.colors.danger + (urgentCount > 0 ? '40' : '15') }]}
-                    >
-                        {urgentCount > 0 && <LinearGradient colors={[THEME.colors.danger + '10', 'transparent']} style={StyleSheet.absoluteFill} />}
-                        <Ionicons name="warning" size={18} color={urgentCount > 0 ? THEME.colors.danger : THEME.colors.text.disabled} />
-                        <CyberText variant="h1" style={{ color: urgentCount > 0 ? THEME.colors.danger : THEME.colors.text.disabled, marginVertical: 4 }}>
-                            {urgentCount}
-                        </CyberText>
-                        <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.disabled }}>URGENTS</CyberText>
-                    </TouchableOpacity>
+            </SafeAreaView>
 
-                    {/* Colonne Consolidation */}
-                    <View style={[styles.statBox, { borderColor: THEME.colors.glass.border }]}>
-                        <Ionicons name="sync" size={18} color={THEME.colors.text.secondary} />
-                        <CyberText variant="h1" style={{ color: THEME.colors.text.primary, marginVertical: 4 }}>
-                            {consolidationCount}
-                        </CyberText>
-                        <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.disabled }}>EN COURS</CyberText>
-                    </View>
+            {/* MODALES */}
+            <BaseBottomSheet isVisible={activeSheet === 'learning'} onClose={() => setActiveSheet(null)} title="PROGRAMME D'APPRENTISSAGE">
+                <LearningSheetContent currentZoneId={currentZoneId} onSelectZone={setCurrentLearningZone} remainingCount={remainingCount} memoryMap={memoryMap} onStartLearning={handleStartLearning} />
+            </BaseBottomSheet>
 
-                    {/* Colonne Maîtrisés */}
-                    <View style={[styles.statBox, { borderColor: THEME.colors.success + (masteredCount > 0 ? '40' : '15') }]}>
-                        {masteredCount > 0 && <LinearGradient colors={[THEME.colors.success + '05', 'transparent']} style={StyleSheet.absoluteFill} />}
-                        <Ionicons name="checkmark-circle" size={18} color={masteredCount > 0 ? THEME.colors.success : THEME.colors.text.disabled} />
-                        <CyberText variant="h1" style={{ color: masteredCount > 0 ? THEME.colors.success : THEME.colors.text.disabled, marginVertical: 4 }}>
-                            {masteredCount}
-                        </CyberText>
-                        <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.disabled }}>MAÎTRISÉS</CyberText>
-                    </View>
-                </View>
-
-            </ScrollView>
+            <BaseBottomSheet isVisible={activeSheet === 'revision'} onClose={() => setActiveSheet(null)} title="MÉMOIRE GLOBALE">
+                <RevisionSheetContent urgentCount={urgentCount} consolidationCount={consolidatedList.length} masteredCount={masteredList.length} onStartRevision={() => { setActiveSheet(null); router.push('/learn/revision'); }} />
+            </BaseBottomSheet>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
-    scroll: { paddingHorizontal: THEME.metrics.spacing.lg, paddingTop: 60, paddingBottom: 100 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: THEME.metrics.spacing.xl },
-    profileBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
-    sectionLabel: { marginBottom: THEME.metrics.spacing.md },
-    heroCard: { width: '100%', height: 160, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: THEME.metrics.radius.lg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: THEME.metrics.spacing.lg },
-    watermarkContainer: { ...StyleSheet.absoluteFill, justifyContent: 'center', alignItems: 'flex-end', opacity: 0.08 },
-    watermark: { width: '70%', height: '100%', right: -20, top: 20 },
-    heroContent: { flex: 1, padding: THEME.metrics.spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: THEME.colors.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, alignSelf: 'flex-start' },
-    dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-    actionCard: { width: '100%', height: 80, borderRadius: THEME.metrics.radius.md, overflow: 'hidden', marginBottom: THEME.metrics.spacing.xxl, shadowColor: THEME.colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 10 },
-    actionContent: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: THEME.metrics.spacing.lg },
-    playIconWrapper: { width: 48, height: 48, borderRadius: 24, backgroundColor: THEME.colors.background, justifyContent: 'center', alignItems: 'center' },
-    neuralHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    statsGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    statBox: { flex: 1, height: 110, backgroundColor: 'rgba(255,255,255,0.01)', borderRadius: THEME.metrics.radius.md, borderWidth: 1, padding: THEME.metrics.spacing.md, justifyContent: 'space-between', alignItems: 'flex-start', overflow: 'hidden' }
+    hudContainer: { flex: 1, justifyContent: 'space-between' },
+
+    topHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10 },
+    streakBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(5, 5, 7, 0.7)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    legendBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(5, 5, 7, 0.7)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    legendItem: { flexDirection: 'row', alignItems: 'center' },
+    legendText: { color: THEME.colors.text.primary, fontSize: 12, marginLeft: 4 },
+
+    bottomActions: { paddingHorizontal: 20, paddingBottom: 40 },
 });

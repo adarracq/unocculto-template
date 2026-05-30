@@ -1,75 +1,89 @@
-// src/components/atoms/CyberText.tsx
-import { StyleSheet, Text, type TextProps } from 'react-native';
-import { THEME } from '../../theme/theme';
+import { THEME } from '@/theme/theme';
+import React from 'react';
+import { StyleSheet, Text, TextProps } from 'react-native';
 
-export type CyberTextProps = TextProps & {
-    variant?: 'h1' | 'h2' | 'body' | 'bodySmall' | 'caps' | 'label';
-    colorType?: 'primary' | 'secondary' | 'disabled';
-    accent?: 'primary' | 'danger' | 'success' | 'accent';
+export type TextVariant = 'h1' | 'h2' | 'body' | 'bodySmall' | 'caps';
+export type ColorType = 'primary' | 'secondary' | 'disabled' | 'accent';
+
+interface CyberTextProps extends TextProps {
+    variant?: TextVariant;
+    colorType?: ColorType;
     align?: 'left' | 'center' | 'right';
-};
+    children: React.ReactNode;
+}
 
-export function CyberText({
-    style,
+export const CyberText = ({
     variant = 'body',
     colorType = 'primary',
-    accent,
     align = 'left',
+    style,
+    children,
     ...rest
-}: CyberTextProps) {
+}: CyberTextProps) => {
 
-    // Résolution de la couleur
-    let textColor: string = THEME.colors.text[colorType];
-    if (accent) {
-        textColor = THEME.colors[accent];
-    }
+    // Attribution de la couleur selon votre THEME
+    const getColor = () => {
+        switch (colorType) {
+            case 'secondary': return THEME.colors.text.secondary;
+            case 'disabled': return THEME.colors.text.disabled;
+            case 'accent': return THEME.colors.primary; // L'Or ou la couleur d'accentuation
+            default: return THEME.colors.text.primary;
+        }
+    };
 
     return (
         <Text
             style={[
-                { color: textColor, textAlign: align },
+                styles.base,
                 styles[variant],
+                { color: getColor(), textAlign: align },
                 style,
             ]}
             {...rest}
-        />
+        >
+            {children}
+        </Text>
     );
-}
+};
 
 const styles = StyleSheet.create({
+    base: {
+        fontFamily: 'Jakarta-Regular', // 💡 Par défaut, tout le texte utilisera cette police
+    },
+
+    // TITRES
     h1: {
-        fontSize: 32,
-        fontWeight: '800',
-        letterSpacing: -1, // Titres massifs et serrés (style Apple/Stripe)
-        lineHeight: 38,
+        fontFamily: 'Jakarta-ExtraBold', // 💡 Remplace le fontWeight: '800'
+        fontSize: 28,
+        letterSpacing: -0.5,
+        lineHeight: 34,
     },
     h2: {
-        fontSize: 22,
-        fontWeight: '700',
-        letterSpacing: -0.5,
-        lineHeight: 28,
+        fontFamily: 'Jakarta-SemiBold', // 💡 Remplace le fontWeight: '600'
+        fontSize: 20,
+        letterSpacing: -0.3,
+        lineHeight: 26,
     },
+
+    // CORPS DE TEXTE
     body: {
+        fontFamily: 'Jakarta-Regular',
         fontSize: 16,
-        fontWeight: '400',
+        letterSpacing: 0,
         lineHeight: 24,
-        letterSpacing: 0.2,
     },
     bodySmall: {
+        fontFamily: 'Jakarta-Regular',
         fontSize: 14,
-        fontWeight: '400',
+        letterSpacing: 0,
         lineHeight: 20,
-        letterSpacing: 0.3,
     },
-    caps: { // Pour les sur-titres et labels
-        fontSize: 12,
-        fontWeight: '700',
+
+    // SUR-TITRES / BADGES
+    caps: {
+        fontFamily: 'Jakarta-Bold', // 💡 Remplace le fontWeight: '700'
+        fontSize: 11,
+        letterSpacing: 1.5,
         textTransform: 'uppercase',
-        letterSpacing: 2,
     },
-    label: { // Chiffres de statistiques ou valeurs fortes
-        fontSize: 40,
-        fontWeight: '900',
-        letterSpacing: -1.5,
-    }
 });

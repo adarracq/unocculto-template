@@ -1,218 +1,121 @@
+import { CyberText } from '@/components/atoms/CyberText';
 import { THEME } from '@/theme/theme';
-import { functions } from '@/utils/Functions';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
-
-// On garde 3 variantes claires
-type ButtonVariant = 'solid' | 'glass' | 'outline';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface MyButtonProps {
-  title: string;
-  onPress: () => void;
-  variant?: ButtonVariant;
-
-  leftIcon?: string;
-  rightIcon?: string;
-
-  disabled?: boolean;
-  style?: ViewStyle;
-  bump?: boolean; // Animation de flèche
-
-  // Surcharges manuelles (si besoin)
-  backgroundColor?: string;
-  textColor?: string;
-  borderColor?: string;
+    title: string;
+    subtitle?: string;
+    onPress: () => void;
+    variant?: 'default' | 'danger' | 'outline' | 'gradient';
+    iconRight?: keyof typeof Ionicons.glyphMap;
+    iconLeft?: keyof typeof Ionicons.glyphMap;
+    disabled?: boolean;
+    loading?: boolean;
+    style?: any;
 }
 
 export default function MyButton({
-  title,
-  onPress,
-  variant = 'glass',
-  leftIcon,
-  rightIcon,
-  disabled = false,
-  style,
-  bump = false,
-  backgroundColor,
-  textColor,
-  borderColor,
+    title, subtitle, onPress, variant = 'default', iconRight, iconLeft, disabled = false, loading = false, style
 }: MyButtonProps) {
 
-  // --- Animations ---
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const bumpValue = useRef(new Animated.Value(0)).current; // On part de 0 (position initiale)
+    const isDanger = variant === 'danger';
+    const isGradient = variant === 'gradient';
+    const isOutline = variant === 'outline';
 
-  const handlePressIn = () => {
-    if (disabled) return;
-    functions.vibrate('click');
-    Animated.spring(scaleValue, { toValue: 0.96, useNativeDriver: true, speed: 20 }).start();
-  };
+    // 1. Détermination de la couleur principale (Texte & Icônes)
+    let mainColor: string = THEME.colors.text.primary;
+    if (disabled) mainColor = THEME.colors.text.disabled;
+    else if (isGradient) mainColor = THEME.colors.background; // Texte noir/sombre sur fond or/primaire
+    else if (isOutline) mainColor = THEME.colors.primary;
+    else if (isDanger) mainColor = THEME.colors.danger;
 
-  const handlePressOut = () => {
-    Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
-  };
+    // 2. Couleurs de fond et de bordure
+    const borderColor = disabled ? 'rgba(255,255,255,0.05)' :
+        isGradient ? 'transparent' :
+            isOutline ? THEME.colors.primary + '80' :
+                isDanger ? THEME.colors.danger + '60' :
+                    'rgba(255,255,255,0.15)';
 
-  // Animation du Bump corrigée (Translation X)
-  useEffect(() => {
-    if (bump && !disabled) {
-      const anim = Animated.loop(
-        Animated.sequence([
-          // Mouvement vers la droite (5px)
-          Animated.timing(bumpValue, {
-            toValue: 6,
-            duration: 600,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true
-          }),
-          // Retour position 0
-          Animated.timing(bumpValue, {
-            toValue: 0,
-            duration: 600,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true
-          })
-        ])
-      );
-      anim.start();
-      return () => anim.stop();
-    } else {
-      bumpValue.setValue(0);
-    }
-  }, [bump, disabled]);
+    const bgColor = disabled ? 'rgba(255,255,255,0.01)' :
+        isGradient ? 'transparent' : // La couleur de fond est gérée par le LinearGradient
+            isOutline ? 'rgba(255,255,255,0.02)' :
+                isDanger ? THEME.colors.danger + '15' :
+                    'rgba(255,255,255,0.03)';
 
-  // --- Configuration des Styles ---
-  const getStyles = () => {
-    if (disabled) return {
-      container: styles.disabledContainer,
-      bg: THEME.colors.accent,
-      text: THEME.colors.backgroundLight,
-      iconTint: THEME.colors.backgroundLight,
-      border: THEME.colors.backgroundLight,
-    };
+    // Couleur spécifique pour le sous-titre si fond gradient (pour rester lisible)
+    const subtitleColor = isGradient ? 'rgba(0,0,0,0.6)' : THEME.colors.text.secondary;
 
-    switch (variant) {
-      case 'glass':
-        return {
-          container: styles.glassContainer,
-          // Blanc semi-transparent par défaut
-          bg: backgroundColor || 'rgba(255, 255, 255, 0.2)',
-          text: textColor || THEME.colors.accent,
-          iconTint: textColor || THEME.colors.accent,
-          border: borderColor || 'rgba(255, 255, 255, 0.3)',
-        };
-      case 'outline':
-        return {
-          container: styles.outlineContainer,
-          bg: backgroundColor || 'transparent',
-          text: textColor || THEME.colors.text.primary,
-          iconTint: textColor || THEME.colors.accent,
-          border: borderColor || THEME.colors.accent
-        };
-      case 'solid':
-      default:
-        return {
-          container: styles.solidContainer,
-          // Fond Blanc, Texte Couleur Principale (Plus doux que noir)
-          bg: backgroundColor || THEME.colors.accent,
-          text: textColor || THEME.colors.primary,
-          iconTint: textColor || THEME.colors.primary,
-          border: borderColor || 'transparent'
-        };
-    }
-  };
+    return (
+        <TouchableOpacity
+            activeOpacity={disabled || loading ? 1 : 0.7}
+            onPress={disabled || loading ? undefined : onPress}
+            style={[
+                styles.button,
+                { borderColor, backgroundColor: bgColor },
+                isGradient && !disabled && styles.glowPrimary,
+                style
+            ]}
+        >
+            {/* Dégradé en arrière-plan pour la variante "gradient" */}
+            {isGradient && !disabled && (
+                <LinearGradient
+                    colors={[THEME.colors.primary, '#A68A2C']}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
+            )}
 
-  const config = getStyles();
+            {loading ? (
+                <ActivityIndicator color={mainColor} size="small" style={{ flex: 1 }} />
+            ) : (
+                <>
+                    <View style={styles.leftContent}>
+                        {iconLeft && <Ionicons name={iconLeft} size={20} color={mainColor} style={styles.iconLeft} />}
+                        <View>
+                            <CyberText variant="caps" style={{ color: mainColor, fontSize: 14, letterSpacing: 1.5 }}>
+                                {title}
+                            </CyberText>
+                            {subtitle && (
+                                <CyberText variant="bodySmall" style={{ color: subtitleColor, marginTop: 2 }}>
+                                    {subtitle}
+                                </CyberText>
+                            )}
+                        </View>
+                    </View>
 
-  return (
-    <Animated.View style={[{ transform: [{ scale: scaleValue }], width: '100%' }, style]}>
-      <Pressable
-        onPress={disabled ? undefined : onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[
-          styles.baseContainer,
-          config.container,
-          {
-            backgroundColor: config.bg,
-            borderColor: config.border
-          }
-        ]}
-      >
-        {/* Groupe Gauche (Icone + Texte) */}
-        <View style={styles.leftGroup}>
-          {leftIcon && (
-            <Image
-              source={functions.getIconSource(leftIcon)}
-              style={[styles.icon, { tintColor: config.iconTint }]}
-            />
-          )}
-          <Text style={[styles.text, { color: config.text }]}>
-            {title}
-          </Text>
-        </View>
-
-        {/* Icone Droite (Animée) */}
-        {rightIcon && (
-          <Animated.View style={{
-            transform: [{ translateX: bumpValue }] // On bouge en X
-          }}>
-            <Image
-              source={functions.getIconSource(rightIcon)}
-              style={[styles.icon, { tintColor: config.iconTint }]}
-            />
-          </Animated.View>
-        )}
-      </Pressable>
-    </Animated.View>
-  );
+                    {iconRight && <Ionicons name={iconRight} size={20} color={mainColor} />}
+                </>
+            )}
+        </TouchableOpacity>
+    );
 }
 
 const styles = StyleSheet.create({
-  baseContainer: {
-    height: 58, // Hauteur confortable
-    width: '100%',
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    borderCurve: 'continuous',
-  },
-
-  // --- Styles spécifiques ---
-  solidContainer: {
-    // Ombre douce colorée (glow)
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  glassContainer: {
-    borderWidth: 1,
-    // Pas d'ombre portée sur le verre pour garder la transparence clean
-  },
-  outlineContainer: {
-    borderWidth: 1,
-  },
-  disabledContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-
-  // --- Texte & Icones ---
-  leftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  text: {
-    fontFamily: 'title-bold',
-    fontSize: 16,
-  },
-  icon: {
-    width: 20,
-    height: 20,
-    resizeMode: 'contain',
-  }
+    button: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        minHeight: 64, // Hauteur confortable
+        borderRadius: 16,
+        borderWidth: 1,
+        width: '100%',
+        overflow: 'hidden', // Crucial pour que le LinearGradient respecte les coins arrondis
+    },
+    leftContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconLeft: {
+        marginRight: 16,
+    },
+    glowPrimary: {
+        shadowColor: THEME.colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
+    }
 });

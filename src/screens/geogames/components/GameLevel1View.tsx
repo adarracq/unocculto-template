@@ -1,6 +1,6 @@
 import { CyberText } from '@/components/atoms/CyberText';
 import InteractiveMap from '@/components/organisms/InteractiveMap';
-import { MICRO_ISLANDS_STATES } from '@/data/Countries'; // Ajustez l'import selon votre fichier
+import { MICRO_STATES } from '@/data/Countries'; // Ajustez l'import selon votre fichier
 import { THEME } from '@/theme/theme';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -20,7 +20,7 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
     }, [target]);
 
     const zoomLevel = useMemo(() => {
-        const isMicro = MICRO_ISLANDS_STATES.includes(target.code);
+        const isMicro = MICRO_STATES.includes(target.code);
         return isMicro ? 5 : 3;
     }, [target]);
 

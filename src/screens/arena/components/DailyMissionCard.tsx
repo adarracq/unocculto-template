@@ -67,7 +67,7 @@ export default function DailyMissionCard({ title, type, bonus, regionId, onPress
                             PRIORITÉ HAUTE
                         </CyberText>
                     </View>
-                    <CyberText variant="caps" accent="primary" style={{ fontSize: 10 }}>
+                    <CyberText variant="caps" style={{ fontSize: 10 }}>
                         EXPIRE DANS {timeLeft}
                     </CyberText>
                 </View>
