@@ -159,7 +159,7 @@ export default function QuizGameView({ step, onValid }: Props) {
                         <CyberText variant="caps" style={{ color: THEME.colors.background }}>
                             POURSUIVRE
                         </CyberText>
-                        <Ionicons name="arrow-forward" size={20} color={THEME.colors.background} style={{ marginLeft: 8 }} />
+                        <Ionicons name="chevron-forward" size={20} color={THEME.colors.background} style={{ marginLeft: 8 }} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: THEME.metrics.radius.md,
         borderWidth: 1.5,
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: THEME.colors.glass.background
     },
 
     // Mode Image

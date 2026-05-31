@@ -24,11 +24,11 @@ export const getDailyMission = () => {
 
     // 3. Construction de l'objet Mission
     return {
-        title: `DÉFI : ${targetZone.name}`,
+        title: targetZone.name,
         typeLabel: targetModeConfig.label, // "DRAPEAUX"
         modeId: targetModeId,             // "flag"
         regionId: targetZone.id,          // "AFR"
-        bonus: "XP X2",
+        iconName: targetModeConfig.iconName, // "flag"
         expiresAt: new Date().setHours(23, 59, 59, 999) // Minuit ce soir
     };
 };

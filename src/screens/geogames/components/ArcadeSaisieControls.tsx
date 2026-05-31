@@ -56,7 +56,7 @@ export default function ArcadeSaisieControls({ status, onSubmit, placeholder = "
                     style={[styles.sendButton, { backgroundColor: text.trim() && status === 'playing' ? THEME.colors.primary : 'transparent' }]}
                 >
                     <Ionicons
-                        name={status === 'success' ? "checkmark" : status === 'error' ? "close" : "arrow-forward"}
+                        name={status === 'success' ? "checkmark" : status === 'error' ? "close" : "chevron-forward"}
                         size={20}
                         color={text.trim() && status === 'playing' ? THEME.colors.background : THEME.colors.text.disabled}
                     />
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
         height: 58,
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: THEME.colors.glass.background,
         borderRadius: THEME.metrics.radius.md,
         borderWidth: 1.5,
         paddingLeft: 16,
@@ -84,7 +84,6 @@ const styles = StyleSheet.create({
         color: THEME.colors.text.primary,
         fontSize: 16,
         fontFamily: 'Courier New', // Style console
-        fontWeight: 'bold',
         height: '100%'
     },
     sendButton: {

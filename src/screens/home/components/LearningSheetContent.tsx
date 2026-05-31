@@ -61,7 +61,8 @@ export default function LearningSheetContent({ currentZoneId, onSelectZone, rema
             <MyButton
                 title={remainingCount > 0 ? "LANCER L'APPRENTISSAGE" : "ZONE COMPLÉTÉE"}
                 subtitle={remainingCount > 0 ? `4 nouveaux pays à découvrir` : `Toutes les données sont acquises`}
-                iconRight="arrow-forward"
+                iconRight="chevron-forward"
+                iconLeft='school'
                 disabled={remainingCount === 0}
                 onPress={onStartLearning}
             />
@@ -72,7 +73,7 @@ export default function LearningSheetContent({ currentZoneId, onSelectZone, rema
 const styles = StyleSheet.create({
     container: { paddingTop: 10, paddingBottom: 10 },
     listContainer: { gap: 10, marginBottom: 24 },
-    zoneRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.02)', borderWidth: 1, borderColor: 'transparent' },
+    zoneRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 12, backgroundColor: THEME.colors.glass.background, borderWidth: 1, borderColor: 'transparent' },
     zoneRowActive: { borderColor: THEME.colors.primary, backgroundColor: 'rgba(255,255,255,0.05)' },
     leftInfo: { flexDirection: 'row', alignItems: 'center', gap: 16 }
 });

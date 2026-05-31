@@ -13,8 +13,6 @@ export default function ArenaNavigator() {
             {/* L'écran principal de l'arène */}
             <Stack.Screen name="index" />
 
-            {/* L'écran du parcours de licences */}
-            <Stack.Screen name="discovery" />
         </Stack>
     );
 }

@@ -44,6 +44,9 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
         return mode === 'capital' ? "IDENTIFIEZ LA CAPITALE" : "IDENTIFIEZ CE TERRITOIRE";
     };
 
+
+
+
     return (
         <View style={styles.container}>
 

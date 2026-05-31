@@ -1,4 +1,4 @@
-import { RegionLevelsScreen } from "@/screens/arena/RegionLevelsScreen";
+import RegionLevelsScreen from "@/screens/arena/RegionLevelsScreen";
 
 
 export default function RegionLevelsPage() {

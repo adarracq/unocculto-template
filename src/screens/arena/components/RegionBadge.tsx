@@ -100,7 +100,7 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
                             <View style={[styles.codeTag, { backgroundColor: THEME.colors.glass.background }]}>
                                 <CyberText
                                     variant="caps"
-                                    style={{ fontSize: 9, fontWeight: '900', letterSpacing: 1, color: isLocked ? THEME.colors.levels.locked : borderColor }}
+                                    style={{ fontSize: 9, letterSpacing: 1, color: isLocked ? THEME.colors.levels.locked : borderColor }}
                                 >
                                     {code}
                                 </CyberText>
@@ -116,7 +116,6 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
                                 variant="h2"
                                 style={{
                                     color: isLocked ? THEME.colors.text.disabled : THEME.colors.text.primary,
-                                    fontSize: isLarge ? 22 : 18,
                                     textAlign: 'left',
                                     letterSpacing: 0.5
                                 }}

@@ -1,11 +1,39 @@
+// src/screens/arena/components/GameLevel3View.tsx
 import { getFlagImage, MICRO_STATES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { useMemo } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
+import { CyberText } from '@/components/atoms/CyberText';
 import InteractiveMap from '@/components/organisms/InteractiveMap';
+import { Ionicons } from '@expo/vector-icons';
 import type { GameViewProps } from '../GeoGameScreen';
 import ArcadeSaisieControls from './ArcadeSaisieControls';
+
+// --- ALGORITHME DE TOLÉRANCE (Distance de Levenshtein) ---
+// Calcule le nombre de caractères de différence entre deux chaînes
+const getLevenshteinDistance = (a: string, b: string): number => {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // Remplacement
+                    Math.min(
+                        matrix[i][j - 1] + 1, // Insertion
+                        matrix[i - 1][j] + 1  // Suppression
+                    )
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+};
 
 export default function GameLevel3View({ engine, mode }: GameViewProps) {
     const { currentQuestion, validateAnswer, mapFeedback, status } = engine;
@@ -14,22 +42,46 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
     if (!currentQuestion) return null;
     const target = currentQuestion.target;
 
-    // --- LOGIQUE DE VALIDATION TEXTUELLE ---
+    // La réponse attendue brute FR (pour l'affichage et la validation)
+    const expectedRawAnswer = mode === 'capital'
+        ? (target.capital || 'Inconnue')
+        : (target.name_fr || 'Inconnu');
+
+    // La réponse attendue brute EN (pour la validation alternative)
+    // (Si tu as aussi un champ `target.capital_en`, tu peux l'ajouter ici)
+    const expectedRawAnswerEn = mode === 'capital'
+        ? (target.capital || 'Inconnue')
+        : (target.name_en || 'Unknown');
+
+    // --- LOGIQUE DE VALIDATION TEXTUELLE TOLÉRANTE ---
     const handleTextSubmit = (text: string) => {
-        // Fonction pour retirer les accents, majuscules et espaces superflus
+        // 1. Nettoyage extrême
         const normalize = (str: string) =>
-            str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            str.normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+                .toLowerCase()
+                .replace(/[-']/g, " ") // Remplace les tirets et apostrophes par des espaces
+                .replace(/[^a-z0-9 ]/g, "") // Supprime la ponctuation
+                .replace(/\s+/g, " ") // Condense les espaces
+                .trim();
 
         const input = normalize(text);
-        // On compare soit avec la capitale, soit avec le nom (français)
-        const expected = mode === 'capital'
-            ? normalize(target.capital || '')
-            : normalize(target.name_fr || target.name_fr || '');
+        const expectedFr = normalize(expectedRawAnswer);
+        const expectedEn = normalize(expectedRawAnswerEn);
 
-        if (input === expected) {
-            validateAnswer(target.code); // C'est la bonne réponse !
+        // 2. Calcul de la distance pour les deux langues
+        const distanceFr = getLevenshteinDistance(input, expectedFr);
+        const distanceEn = getLevenshteinDistance(input, expectedEn);
+
+        // 3. Calcul de la tolérance indépendante (car FR et EN n'ont pas la même longueur)
+        const maxErrorsAllowedFr = expectedFr.length <= 3 ? 0 : Math.floor(expectedFr.length / 4);
+        const maxErrorsAllowedEn = expectedEn.length <= 3 ? 0 : Math.floor(expectedEn.length / 4);
+
+        // 4. Validation (valide si bon en FR *OU* en EN)
+        if (distanceFr <= maxErrorsAllowedFr || distanceEn <= maxErrorsAllowedEn) {
+            validateAnswer(target.code); // C'est validé !
         } else {
-            validateAnswer('WRONG_CODE'); // C'est faux, on déclenche l'erreur
+            validateAnswer('WRONG_CODE'); // Trop d'erreurs
         }
     };
 
@@ -71,13 +123,32 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
     return (
         <View style={styles.container}>
 
-            {/* 1. INPUT FLOTTANT (Terminal Holographique) */}
+            {/* 1. INPUT FLOTTANT ET FEEDBACK */}
             <View style={styles.topInputContainer}>
                 <ArcadeSaisieControls
                     status={status as 'playing' | 'success' | 'error'}
                     onSubmit={handleTextSubmit}
                     placeholder={`IDENTIFIEZ ${mode === 'capital' ? 'LA CAPITALE' : 'LE TERRITOIRE'}`}
                 />
+
+                {/* 💡 AFFICHAGE DE LA BONNE RÉPONSE (Pendant l'animation de fin de tour) */}
+                {status !== 'playing' && (
+                    <View style={[styles.feedbackBox, { borderColor: status === 'success' ? THEME.colors.success + '40' : THEME.colors.danger + '40', backgroundColor: status === 'success' ? THEME.colors.success + '10' : THEME.colors.danger + '10' }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons
+                                name={status === 'success' ? 'checkmark-circle' : 'close-circle'}
+                                size={16}
+                                color={status === 'success' ? THEME.colors.success : THEME.colors.danger}
+                            />
+                            <CyberText variant="caps" style={{ color: status === 'success' ? THEME.colors.success : THEME.colors.danger, letterSpacing: 1 }}>
+                                {status === 'success' ? 'EXACT' : 'RÉPONSE ATTENDUE'}
+                            </CyberText>
+                        </View>
+                        <CyberText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 4 }}>
+                            {expectedRawAnswer.toUpperCase()}
+                        </CyberText>
+                    </View>
+                )}
             </View>
 
             {/* 2. ZONE VISUELLE */}
@@ -115,11 +186,26 @@ const styles = StyleSheet.create({
     },
     topInputContainer: {
         position: 'absolute',
-        top: 20, // Ajustez selon la hauteur de votre ArcadeHeader
+        top: 20,
         width: '100%',
         paddingHorizontal: THEME.metrics.spacing.lg,
-        zIndex: 20, // Toujours au-dessus de la carte
+        zIndex: 20,
     },
+
+    // --- Styles du panneau de Feedback ---
+    feedbackBox: {
+        marginTop: 12,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+    },
+
     visualArea: {
         flex: 1,
         justifyContent: 'center'
@@ -129,7 +215,6 @@ const styles = StyleSheet.create({
     mapWrapper: {
         flex: 1,
         width: '100%',
-        // On libère un peu d'espace en haut pour ne pas que l'input cache le pays
         paddingTop: 80,
     },
 
@@ -138,7 +223,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 80, // Laisse la place à l'input
+        paddingTop: 80,
     },
     flagLarge: {
         width: 280,

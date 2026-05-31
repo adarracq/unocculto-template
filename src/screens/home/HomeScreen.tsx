@@ -1,39 +1,40 @@
 // src/screens/home/HomeScreen.tsx
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
 import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet';
 import WorldProgressMap from '@/components/organisms/WorldProgressMap';
 import LearningSheetContent from './components/LearningSheetContent';
-import RevisionSheetContent from './components/RevisionSheetContent'; // (Le composant du message précédent)
+import RevisionSheetContent from './components/RevisionSheetContent';
 
+import StreakBadge from '@/components/molecules/StreakBadge';
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { useLearningStore } from '@/store/useLearningStore';
-import { useUserStore } from '@/store/useUserStore';
+import { useStreakStore } from '@/store/useStreakStore';
 import { THEME } from '@/theme/theme';
+import { AlertTriangle, CircleQuestionMark, RefreshCw, ShieldCheck } from 'lucide-react-native';
 
 export default function HomeScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets(); // 💡 On récupère les bordures de l'écran (encoche, etc.)
 
-    const pseudo = useUserStore((state) => state.pseudo);
-    const dayStreak = 12; // Mock temporaire
+    const streakCount = useStreakStore(state => state.streakCount);
 
     const currentZoneId = useLearningStore((state) => state.currentLearningZone);
     const setCurrentLearningZone = useLearningStore((state) => state.setCurrentLearningZone);
     const remainingCount = useLearningStore((state) => state.getRemainingCount());
     const memoryMap = useLearningStore((state) => state.memoryMap);
 
-    // Calculs GLOBAUX pour la carte et la modale de révision (Plus restreint à la zone !)
-    const { urgentList, consolidatedList, masteredList } = useMemo(() => {
+    const { urgentList, consolidatedList, masteredList, leftCount } = useMemo(() => {
         const now = Date.now();
         const urgents: string[] = [];
         const consols: string[] = [];
         const masters: string[] = [];
+        let left = ALL_COUNTRIES.length;
 
         ALL_COUNTRIES.forEach(c => {
             const mem = memoryMap[c.code];
@@ -46,7 +47,8 @@ export default function HomeScreen() {
                 consols.push(c.code);
             }
         });
-        return { urgentList: urgents, consolidatedList: consols, masteredList: masters };
+        left = left - urgents.length - consols.length - masters.length;
+        return { urgentList: urgents, consolidatedList: consols, masteredList: masters, leftCount: left };
     }, [memoryMap]);
 
     const urgentCount = urgentList.length;
@@ -64,61 +66,69 @@ export default function HomeScreen() {
     return (
         <View style={styles.container}>
             {/* CARTE EN BACKGROUND */}
-            <WorldProgressMap validCountries={ALL_COUNTRIES.map(c => c.code)} urgentCountries={urgentList} consolidatedCountries={consolidatedList} masteredCountries={masteredList} isBackground />
+            <WorldProgressMap
+                urgentCountries={urgentList}
+                consolidatedCountries={consolidatedList}
+                masteredCountries={masteredList}
+                isBackground
+            />
 
-            <SafeAreaView style={styles.hudContainer} pointerEvents="box-none">
+            {/* HUD (Heads Up Display) - Couche transparente par-dessus la carte */}
+            <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
 
-                {/* --- HEADER (Streak & Legend) --- */}
-                <View style={styles.topHeader} pointerEvents="box-none">
-                    <View style={styles.streakBadge}>
-                        <Ionicons name="flame" size={16} color={THEME.colors.danger} style={{ marginRight: 6 }} />
-                        <CyberText variant="h2" style={{ fontSize: 14, color: THEME.colors.danger }}>{dayStreak}</CyberText>
-                    </View>
+                {/* --- HEADER (Positionné tout en haut) --- */}
+                <View style={[styles.topHeader, { top: insets.top + 10 }]} pointerEvents="box-none">
+                    <StreakBadge count={streakCount} />
 
-                    <TouchableOpacity activeOpacity={0.8} onPress={() => setActiveSheet('revision')} style={styles.legendBadge}>
-                        <View style={styles.legendItem}>
-                            <Ionicons name="warning" size={16} color={THEME.colors.danger} />
+                    <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => setActiveSheet('revision')}
+                        style={styles.legendBadge}
+                    >
+                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.danger + '15' }]}>
+                            <AlertTriangle size={16} color={THEME.colors.danger} />
                             <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.danger }]}>{urgentCount}</CyberText>
                         </View>
-                        <View style={styles.legendItem}>
-                            <Ionicons name="sync" size={16} color={THEME.colors.secondary} />
-                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.secondary }]}>{consolidatedList.length}</CyberText>
+
+                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.inProgress + '15' }]}>
+                            <RefreshCw size={16} color={THEME.colors.inProgress} />
+                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.inProgress }]}>{consolidatedList.length}</CyberText>
                         </View>
-                        <View style={styles.legendItem}>
-                            <Ionicons name="shield-checkmark" size={16} color={THEME.colors.success} />
+
+                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.success + '15' }]}>
+                            <ShieldCheck size={16} color={THEME.colors.success} />
                             <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.success }]}>{masteredList.length}</CyberText>
+                        </View>
+
+                        <View style={[styles.iconGroup, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+                            <CircleQuestionMark size={16} color={THEME.colors.text.disabled} />
+                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.text.disabled }]}>{leftCount}</CyberText>
                         </View>
                     </TouchableOpacity>
                 </View>
 
-                {/* Espace libre pour scroller la carte */}
-                <View style={{ flex: 1 }} pointerEvents="none" />
-
-                {/* --- ACTIONS MINIMALISTES (En bas) --- */}
+                {/* --- ACTIONS MINIMALISTES (Positionnées tout en bas) --- */}
                 <View style={styles.bottomActions} pointerEvents="box-none">
                     <MyButton
                         title="APPRENTISSAGE"
                         subtitle={`Zone actuelle : ${currentZoneId}`}
-                        iconLeft="book"
-                        iconRight="arrow-forward"
+                        iconLeft="compass"
+                        iconRight="chevron-forward"
                         onPress={() => setActiveSheet('learning')}
-                        style={{ marginBottom: 12 }}
                     />
 
-                    {/* Le bouton révision n'apparaît que s'il y a des urgences */}
                     {urgentCount > 0 && (
                         <MyButton
                             title="RÉVISIONS"
                             subtitle={`${urgentCount} données critiques`}
                             variant="danger"
-                            iconRight="arrow-forward"
-                            iconLeft="shield-checkmark"
+                            iconRight="chevron-forward"
+                            iconLeft="warning"
                             onPress={() => setActiveSheet('revision')}
                         />
                     )}
                 </View>
-
-            </SafeAreaView>
+            </View>
 
             {/* MODALES */}
             <BaseBottomSheet isVisible={activeSheet === 'learning'} onClose={() => setActiveSheet(null)} title="PROGRAMME D'APPRENTISSAGE">
@@ -133,14 +143,54 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: THEME.colors.background },
-    hudContainer: { flex: 1, justifyContent: 'space-between' },
+    container: {
+        flex: 1,
+        backgroundColor: THEME.colors.background
+    },
 
-    topHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10 },
-    streakBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(5, 5, 7, 0.7)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    legendBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(5, 5, 7, 0.7)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-    legendItem: { flexDirection: 'row', alignItems: 'center' },
-    legendText: { color: THEME.colors.text.primary, fontSize: 12, marginLeft: 4 },
+    // HEADER
+    topHeader: {
+        position: 'absolute', // 💡 Sort du flux Flex, flotte en haut
+        left: 20,
+        right: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    legendBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6, // Espace propre entre les groupes d'icônes
+        backgroundColor: 'rgba(15, 15, 17, 0.95)',
+        padding: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    iconGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 14, // Capsules bien arrondies à l'intérieur
+    },
+    legendText: {
+        fontSize: 13,
+        marginTop: -1,
+    },
 
-    bottomActions: { paddingHorizontal: 20, paddingBottom: 40 },
+    // BOTTOM ACTIONS
+    bottomActions: {
+        position: 'absolute', // 💡 Flotte en bas, ne sera plus jamais écrasé !
+        bottom: 100,
+        left: 20,
+        right: 20,
+        gap: 16,
+    },
 });

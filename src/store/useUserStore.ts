@@ -4,38 +4,44 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface UserState {
-    // --- STATE ---
-    pseudo: string;
+    tickets: number;
     isPremium: boolean;
-    fuel: number;
 
     // --- ACTIONS ---
-    setPseudo: (pseudo: string) => void;
-    setPremium: (status: boolean) => void;
-    useFuel: () => boolean;
-    refillFuel: (amount: number) => void;
+    consumeTicket: () => boolean;
+    addTicket: (amount: number) => void;
+    refillTicketsDaily: () => void;
+    unlockPremium: () => void;
 }
 
 export const useUserStore = create<UserState>()(
     persist(
         (set, get) => ({
-            pseudo: 'Agent_1', // Pseudo par défaut
+            tickets: 3,
             isPremium: false,
-            fuel: 5,
+            consumeTicket: () => {
+                const { tickets, isPremium } = get();
+                // Si le joueur est premium, il ne consomme rien, l'accès est toujours autorisé
+                if (isPremium) return true;
 
-            setPseudo: (pseudo) => set({ pseudo }),
-            setPremium: (isPremium) => set({ isPremium }),
-
-            useFuel: () => {
-                const { isPremium, fuel } = get();
-                if (isPremium) return true; // Infini pour les premiums
-                if (fuel <= 0) return false;
-
-                set({ fuel: fuel - 1 });
-                return true;
+                // Sinon on vérifie les billets
+                if (tickets > 0) {
+                    set({ tickets: tickets - 1 });
+                    return true;
+                }
+                return false;
             },
 
-            refillFuel: (amount) => set((state) => ({ fuel: Math.min(5, state.fuel + amount) })),
+            addTicket: (amount) => set({ tickets: get().tickets + amount }),
+
+            refillTicketsDaily: () => {
+                // Ne recharge que si le joueur n'est pas premium
+                if (!get().isPremium) {
+                    set({ tickets: 3 });
+                }
+            },
+
+            unlockPremium: () => set({ isPremium: true }),
         }),
         {
             name: 'unocculto-user-storage',

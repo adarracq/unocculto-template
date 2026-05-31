@@ -48,7 +48,7 @@ export default function ContinentStats({ memoryMap }: Props) {
 
                         <View style={styles.dataRow}>
                             <CyberText variant="bodySmall" colorType="secondary">Explorés</CyberText>
-                            <CyberText variant="body" style={{ fontWeight: 'bold' }}>{stat.visited} / {stat.total}</CyberText>
+                            <CyberText variant="body" >{stat.visited} / {stat.total}</CyberText>
                         </View>
 
                         <View style={styles.dataRow}>
@@ -83,14 +83,13 @@ const styles = StyleSheet.create({
     },
     card: {
         width: 140,
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: THEME.colors.glass.background,
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
         borderColor: THEME.colors.glass.border,
     },
     cardTitle: {
-        fontWeight: 'bold',
         marginBottom: 12,
         color: THEME.colors.text.primary,
     },

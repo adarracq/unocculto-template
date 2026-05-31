@@ -3,7 +3,6 @@ import { GameMode } from '@/constants/GameConfig'; // Ajustez le chemin si besoi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { useUserStore } from './useUserStore'; // <-- On importe le store utilisateur !
 
 // --- TYPES DE STRUCTURE ---
 export interface LevelProgress {
@@ -27,7 +26,6 @@ export interface LocalRunRecord {
     regionId: string;
     modeId: GameMode;
     levelId: number;
-    pseudo: string;
     timeTaken: number;
     accuracy: number;
     date: string;
@@ -85,19 +83,15 @@ export const useArenaStore = create<ArenaState>()(
                         bestAccuracy
                     };
 
-                    // 💡 RÉCUPÉRATION DU PSEUDO GLOBAL ICI
-                    const currentPseudo = useUserStore.getState().pseudo;
-
                     // Ajout au Leaderboard local
                     const newRecord: LocalRunRecord = {
                         id: Date.now().toString(),
                         regionId,
                         modeId,
                         levelId,
-                        pseudo: currentPseudo, // On utilise le pseudo récupéré
                         timeTaken,
                         accuracy,
-                        date: new Date().toLocaleDateString(),
+                        date: new Date().toISOString(),
                     };
 
                     // On garde le top 20 trié par précision puis temps

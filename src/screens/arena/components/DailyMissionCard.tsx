@@ -10,12 +10,11 @@ import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 interface Props {
     title: string;
     type: string;
-    bonus: string;
     regionId: string;
     onPress: () => void;
 }
 
-export default function DailyMissionCard({ title, type, bonus, regionId, onPress }: Props) {
+export default function DailyMissionCard({ title, type, regionId, onPress }: Props) {
     const [timeLeft, setTimeLeft] = useState("");
 
     useEffect(() => {
@@ -64,7 +63,7 @@ export default function DailyMissionCard({ title, type, bonus, regionId, onPress
                 <View style={styles.badgeRow}>
                     <View style={styles.tagContainer}>
                         <CyberText variant="caps" style={{ color: THEME.colors.background, fontSize: 10 }}>
-                            PRIORITÉ HAUTE
+                            DEFI DU JOUR
                         </CyberText>
                     </View>
                     <CyberText variant="caps" style={{ fontSize: 10 }}>
@@ -83,10 +82,10 @@ export default function DailyMissionCard({ title, type, bonus, regionId, onPress
 
                     {/* Pastille Bonus XP */}
                     <View style={styles.bonusPill}>
-                        <Ionicons name="flash" size={14} color={THEME.colors.background} />
-                        <CyberText variant="caps" style={{ color: THEME.colors.background, fontSize: 12, marginLeft: 4 }}>
-                            {bonus}
+                        <CyberText variant="body" style={{ color: THEME.colors.background, fontFamily: 'Jakarta-Bold', fontSize: 12, marginRight: 4 }}>
+                            GRATUIT
                         </CyberText>
+                        <Ionicons name='ticket' size={16} color={THEME.colors.background} />
                     </View>
                 </View>
 
@@ -143,7 +142,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: THEME.colors.text.primary,
         paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingVertical: 6,
         borderRadius: THEME.metrics.radius.round,
         shadowColor: THEME.colors.text.primary,
         shadowOffset: { width: 0, height: 0 },

@@ -1,6 +1,7 @@
 import { CyberText } from '@/components/atoms/CyberText';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -17,105 +18,161 @@ interface MyButtonProps {
 }
 
 export default function MyButton({
-    title, subtitle, onPress, variant = 'default', iconRight, iconLeft, disabled = false, loading = false, style
+    title,
+    subtitle,
+    onPress,
+    variant = 'default',
+    iconRight,
+    iconLeft,
+    disabled = false,
+    loading = false,
+    style
 }: MyButtonProps) {
 
     const isDanger = variant === 'danger';
     const isGradient = variant === 'gradient';
     const isOutline = variant === 'outline';
 
-    // 1. Détermination de la couleur principale (Texte & Icônes)
+    // 1. Détermination des couleurs (Texte & Icônes)
     let mainColor: string = THEME.colors.text.primary;
     if (disabled) mainColor = THEME.colors.text.disabled;
-    else if (isGradient) mainColor = THEME.colors.background; // Texte noir/sombre sur fond or/primaire
+    else if (isGradient) mainColor = '#1A1A1A'; // Texte sombre sur fond lumineux pour un look premium
     else if (isOutline) mainColor = THEME.colors.primary;
     else if (isDanger) mainColor = THEME.colors.danger;
 
-    // 2. Couleurs de fond et de bordure
-    const borderColor = disabled ? 'rgba(255,255,255,0.05)' :
-        isGradient ? 'transparent' :
-            isOutline ? THEME.colors.primary + '80' :
-                isDanger ? THEME.colors.danger + '60' :
-                    'rgba(255,255,255,0.15)';
+    const subtitleColor = isGradient ? 'rgba(0,0,0,0.5)' : THEME.colors.text.secondary;
 
-    const bgColor = disabled ? 'rgba(255,255,255,0.01)' :
-        isGradient ? 'transparent' : // La couleur de fond est gérée par le LinearGradient
-            isOutline ? 'rgba(255,255,255,0.02)' :
-                isDanger ? THEME.colors.danger + '15' :
-                    'rgba(255,255,255,0.03)';
+    // 2. Styles dynamiques pour les bordures
+    const getBorderColor = () => {
+        if (disabled) return 'rgba(255, 255, 255, 0.03)';
+        if (isGradient) return 'rgba(255, 255, 255, 0.4)'; // Bordure claire subtile sur le gradient
+        if (isOutline) return `${THEME.colors.primary}50`;
+        if (isDanger) return `${THEME.colors.danger}40`;
+        return 'rgba(255, 255, 255, 0.1)'; // Bordure "verre" classique
+    };
 
-    // Couleur spécifique pour le sous-titre si fond gradient (pour rester lisible)
-    const subtitleColor = isGradient ? 'rgba(0,0,0,0.6)' : THEME.colors.text.secondary;
+    // 3. Choix du fond (Couleur superposée au BlurView)
+    const getOverlayBackgroundColor = () => {
+        if (disabled) return 'rgba(15, 15, 15, 0.4)';
+        if (isOutline) return THEME.colors.glass.background;
+        if (isDanger) return `${THEME.colors.danger}10`;
+        return 'rgba(255, 255, 255, 0.05)'; // Léger voile blanc pour le glassmorphism
+    };
 
     return (
         <TouchableOpacity
-            activeOpacity={disabled || loading ? 1 : 0.7}
+            activeOpacity={disabled || loading ? 1 : 0.75}
             onPress={disabled || loading ? undefined : onPress}
             style={[
-                styles.button,
-                { borderColor, backgroundColor: bgColor },
+                styles.container,
+                { borderColor: getBorderColor() },
                 isGradient && !disabled && styles.glowPrimary,
                 style
             ]}
         >
-            {/* Dégradé en arrière-plan pour la variante "gradient" */}
-            {isGradient && !disabled && (
+            {/* Arrière-plan : Gradient OU Effet Verre (Blur) */}
+            {isGradient && !disabled ? (
                 <LinearGradient
-                    colors={[THEME.colors.primary, '#A68A2C']}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    colors={[THEME.colors.primary, '#D4AF37']} // Couleurs or/premium plus douces
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                />
+            ) : (
+                <BlurView
+                    intensity={disabled ? 10 : 25} // Flou plus léger si désactivé
+                    tint="dark"
                     style={StyleSheet.absoluteFill}
                 />
             )}
 
-            {loading ? (
-                <ActivityIndicator color={mainColor} size="small" style={{ flex: 1 }} />
-            ) : (
-                <>
-                    <View style={styles.leftContent}>
-                        {iconLeft && <Ionicons name={iconLeft} size={20} color={mainColor} style={styles.iconLeft} />}
-                        <View>
-                            <CyberText variant="caps" style={{ color: mainColor, fontSize: 14, letterSpacing: 1.5 }}>
-                                {title}
-                            </CyberText>
-                            {subtitle && (
-                                <CyberText variant="bodySmall" style={{ color: subtitleColor, marginTop: 2 }}>
-                                    {subtitle}
-                                </CyberText>
-                            )}
-                        </View>
-                    </View>
-
-                    {iconRight && <Ionicons name={iconRight} size={20} color={mainColor} />}
-                </>
+            {/* Couche de superposition pour ajuster la teinte du verre */}
+            {!isGradient && (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: getOverlayBackgroundColor() }]} />
             )}
+
+            {/* Contenu du bouton */}
+            <View style={styles.contentContainer}>
+                {loading ? (
+                    <ActivityIndicator color={mainColor} size="small" />
+                ) : (
+                    <>
+                        <View style={styles.leftGroup}>
+                            {iconLeft && (
+                                <View style={[styles.iconWrapper, { backgroundColor: isGradient ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)' }]}>
+                                    <Ionicons name={iconLeft} size={18} color={mainColor} />
+                                </View>
+                            )}
+                            <View style={styles.textWrapper}>
+                                <CyberText variant="caps" style={{ color: mainColor, fontSize: 13, letterSpacing: 1.2, fontWeight: '600' }}>
+                                    {title}
+                                </CyberText>
+                                {subtitle && (
+                                    <CyberText variant="bodySmall" style={{ color: subtitleColor, marginTop: 4, fontSize: 11 }}>
+                                        {subtitle}
+                                    </CyberText>
+                                )}
+                            </View>
+                        </View>
+
+                        {iconRight && (
+                            <Ionicons name={iconRight} size={20} color={mainColor} style={{ opacity: 0.8 }} />
+                        )}
+                    </>
+                )}
+            </View>
         </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
-    button: {
+    container: {
+        width: '100%',
+        minHeight: 60,
+        borderRadius: 20, // Courbure plus douce (style iOS)
+        borderWidth: 1,
+        overflow: 'hidden', // Empêche le Blur/Gradient de déborder des coins arrondis
+
+        // Base d'ombre subtile pour détacher le bouton du fond
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    contentContainer: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        minHeight: 64, // Hauteur confortable
-        borderRadius: 16,
-        borderWidth: 1,
-        width: '100%',
-        overflow: 'hidden', // Crucial pour que le LinearGradient respecte les coins arrondis
+        paddingHorizontal: 16,
+        paddingVertical: 12,
     },
-    leftContent: {
+    leftGroup: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
     },
-    iconLeft: {
-        marginRight: 16,
+    iconWrapper: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 14,
+        // Petite bordure interne pour l'icône (détail premium)
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    textWrapper: {
+        justifyContent: 'center',
+        flex: 1,
     },
     glowPrimary: {
         shadowColor: THEME.colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
     }
 });

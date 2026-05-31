@@ -4,10 +4,11 @@ export const THEME = {
     colors: {
         background: '#050505',
         backgroundLight: '#1a1a1a',
+        backgroundVeryLight: '#2a2a2c',
         primary: '#D4AF37',
-        secondary: '#8E9AAF',
         accent: '#00F0FF',
         danger: '#FF4C4C',
+        inProgress: '#608cd7',
         success: '#4CAF50',
 
         // --- NOUVEAU : Couleurs de progression ---
@@ -29,6 +30,11 @@ export const THEME = {
             secondary: '#A0AABF',
             disabled: '#4A5060',
         }
+    },
+    paddings: {
+        top: 40,
+        horizontal: 20,
+        bottom: 80,
     },
 
     metrics: {

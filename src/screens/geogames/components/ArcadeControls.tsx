@@ -1,9 +1,8 @@
-// src/screens/arena/geogames/components/ArcadeControls.tsx
 import { CyberText } from '@/components/atoms/CyberText';
 import { GameMode } from '@/constants/GameConfig';
 import { Country, getFlagImage } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface Props {
@@ -73,8 +72,27 @@ export default function ArcadeControls({ options, targetCode, mode, status, onSe
         }
 
         const label = mode === 'capital' ? (country.capital || 'N/A') : country.name_fr.toUpperCase();
-        return <CyberText variant="h2" align="center" style={{ fontSize: 16 }}>{label}</CyberText>;
+
+        return (
+            // 💡 Le wrapper "dur" qui force les limites du texte
+            <View style={styles.textWrapper}>
+                <CyberText
+                    variant="h3"
+                    align="center"
+                    numberOfLines={2}
+                    adjustsFontSizeToFit={true} // Explicite
+                    minimumFontScale={0.6}
+                    style={styles.label}
+                >
+                    {label}
+                </CyberText>
+            </View>
+        );
     };
+
+    useEffect(() => {
+        setSelectedCode(null);
+    }, [targetCode, mode, options]);
 
     return (
         <View style={styles.container}>
@@ -105,22 +123,37 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     button: {
-        width: '47%', // 2 colonnes
+        width: '47%',
         minHeight: 80,
         borderRadius: THEME.metrics.radius.md,
         borderWidth: 1.5,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: THEME.metrics.spacing.sm,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    // 💡 NOUVEAUX STYLES DE TEXTE
+    textWrapper: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+    },
+    label: {
+        fontSize: 14,
+        lineHeight: 18,
+        textAlign: 'center',
+        width: '100%',
+        flexShrink: 1, // 💡 Oblige le texte à rétrécir au lieu de déborder
     },
     flagWrapper: {
         width: '100%',
         aspectRatio: 1.5,
-        borderRadius: 4,
-        overflow: 'hidden',
     },
     flagImg: {
         width: '100%',
         height: '100%',
+        resizeMode: 'cover',
     }
 });

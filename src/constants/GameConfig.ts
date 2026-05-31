@@ -1,5 +1,6 @@
 // src/config/GameConfig.ts
 import { THEME } from '@/theme/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 export type GameLevel = 1 | 2 | 3 | 4;
 export type GameMode = 'country' | 'flag' | 'capital';
@@ -20,6 +21,7 @@ export interface ModeConfig {
     id: GameMode;
     label: string;
     color: string;
+    iconName: keyof typeof Ionicons.glyphMap; // Ajout de l'icône pour chaque mode
     levels: LevelConfig[];
 }
 
@@ -28,6 +30,7 @@ export const GAME_CONFIG: Record<GameMode, ModeConfig> = {
         id: 'country',
         label: 'PAYS',
         color: THEME.colors.accent, // Cyan technologique
+        iconName: 'globe', // Exemple d'icône pour le mode "country"
         levels: [
             { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Identifiez le bon pays parmi 4 propositions.", rules: { accuracy: 80, time: 600 } },
             { id: 2, title: "TROUVER", subTitle: "LOCALISATION", description: "Localisez précisément le pays demandé sur la carte vierge.", rules: { accuracy: 100 } },
@@ -39,6 +42,7 @@ export const GAME_CONFIG: Record<GameMode, ModeConfig> = {
         id: 'flag',
         label: 'DRAPEAUX',
         color: THEME.colors.danger, // Rouge intense
+        iconName: 'flag', // Exemple d'icône pour le mode "flag"
         levels: [
             { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Associez le drapeau au bon pays.", rules: { accuracy: 100 } },
             { id: 2, title: "TROUVER", subTitle: "MÉMOIRE", description: "Trouvez le pays sur la carte à partir de son drapeau.", rules: { accuracy: 100 } },
@@ -49,6 +53,7 @@ export const GAME_CONFIG: Record<GameMode, ModeConfig> = {
         id: 'capital',
         label: 'CAPITALES',
         color: THEME.colors.success, // Vert émeraude
+        iconName: 'trail-sign', // Exemple d'icône pour le mode "capital"
         levels: [
             { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Quelle est la capitale de ce pays ?", rules: { accuracy: 100 } },
             { id: 2, title: "TROUVER", subTitle: "PRÉCISION", description: "Placez le curseur sur l'emplacement de la capitale.", rules: { accuracy: 100 } },

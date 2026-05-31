@@ -52,7 +52,7 @@ export default function GlobalStats({ visited, total, mastered, urgent }: Props)
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.02)',
+        backgroundColor: THEME.colors.glass.background,
         borderRadius: 16,
         paddingVertical: 16,
         borderWidth: 1,
@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
     verticalDivider: {
         width: 1,
         height: '60%',
-        backgroundColor: 'rgba(255,255,255,0.05)'
+        backgroundColor: THEME.colors.glass.border
     },
 });

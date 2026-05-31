@@ -1,16 +1,14 @@
+import { CyberText } from '@/components/atoms/CyberText';
+import MyButton from '@/components/atoms/MyButton';
 import { THEME } from '@/theme/theme';
-import { functions } from '@/utils/Functions';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Image, Modal, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
-import { CyberText } from '../atoms/CyberText';
-import MyButton from '../atoms/MyButton';
+import { Animated, Modal, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 
 interface Props {
     visible: boolean;
     title: string;
-
-    // On accepte maintenant des composants React pour un contenu riche
     children?: React.ReactNode;
 
     // Actions
@@ -20,8 +18,9 @@ interface Props {
     cancelText?: string;
 
     // Style
-    variant?: 'default' | 'gold'; // default = Main color (Orange), gold = Fin de jeu
+    variant?: 'default' | 'gold' | 'danger';
     color?: string;
+    iconName?: keyof typeof Ionicons.glyphMap; // 💡 Nouvelle prop pour customiser l'icône
 }
 
 export default function CustomModal({
@@ -34,18 +33,26 @@ export default function CustomModal({
     cancelText = "Annuler",
     variant = 'default',
     color,
+    iconName,
 }: Props) {
-    const accentColor = variant === 'gold' ? THEME.colors.levels.gold : (color || THEME.colors.primary);
-    const scaleAnim = useRef(new Animated.Value(0)).current;
 
+    // Définition de la couleur d'accentuation
+    let accentColor = color || THEME.colors.text.primary;
+    if (variant === 'gold') accentColor = THEME.colors.levels?.gold || '#FFD700';
+    if (variant === 'danger') accentColor = THEME.colors.danger;
+
+    // Définition de l'icône par défaut si non fournie
+    const defaultIcon = variant === 'gold' ? 'trophy' : (variant === 'danger' ? 'warning' : 'cube');
+    const finalIconName = iconName || defaultIcon;
+
+    const scaleAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         if (visible) {
-            // Animation d'apparition "Pop"
             Animated.spring(scaleAnim, {
                 toValue: 1,
-                friction: 6,
-                tension: 40,
+                friction: 7,
+                tension: 50,
                 useNativeDriver: true
             }).start();
         } else {
@@ -60,124 +67,75 @@ export default function CustomModal({
             animationType="fade"
             statusBarTranslucent
         >
-            <Animated.View style={[styles.overlay, { transform: [{ scale: scaleAnim }] }]}>
-                {/* On ferme si on clique dehors (optionnel) */}
+            <View style={styles.overlay}>
                 <TouchableWithoutFeedback onPress={onCancel}>
                     <View style={styles.backgroundTouch} />
                 </TouchableWithoutFeedback>
 
-                {/* --- LA CARTE --- */}
-                <LinearGradient
-                    colors={[accentColor + '20', THEME.colors.background]} // Dégradé très sombre
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: .5, y: .5 }}
-                    style={[styles.container, { borderColor: accentColor + '30', backgroundColor: THEME.colors.background }]}
-                >
-                    {/* Header avec Logo + Titre */}
-                    <View style={styles.header}>
-                        <View style={[styles.iconContainer, { backgroundColor: accentColor + '20' }]}>
-                            <Image
-                                source={functions.getIconSource('logo_white')}
-                                style={{ width: 32, height: 32 }}
-                                resizeMode="contain"
-                            />
+                <Animated.View style={[styles.modalWrapper, { transform: [{ scale: scaleAnim }] }]}>
+                    <LinearGradient
+                        colors={[THEME.colors.backgroundLight, THEME.colors.background]} // Gris très sombre premium
+                        style={[styles.container, { borderColor: accentColor + '20' }]}
+                    >
+                        {/* EN-TÊTE */}
+                        <View style={styles.header}>
+                            <View style={[styles.iconContainer, { backgroundColor: accentColor + '15', borderColor: accentColor + '30', borderWidth: 1 }]}>
+                                <Ionicons name={finalIconName as any} size={20} color={accentColor} />
+                            </View>
+                            <CyberText variant="h2" style={{ color: THEME.colors.text.primary, flex: 1 }} numberOfLines={1}>
+                                {title}
+                            </CyberText>
                         </View>
-                        <CyberText
-                            variant="h2"
-                            style={{ color: accentColor }}
-                        >
-                            {title}
-                        </CyberText>
-                    </View>
 
-                    {/* Ligne de séparation subtile */}
-                    <View style={styles.divider} />
+                        <View style={styles.divider} />
 
-                    {/* Contenu Riche (Aligné à gauche par défaut via le children) */}
-                    <View style={styles.content}>
-                        {children}
-                    </View>
+                        {/* CONTENU */}
+                        <View style={styles.content}>
+                            {children}
+                        </View>
 
-                    {/* Boutons */}
-                    <View style={styles.footer}>
-                        {onCancel && (
-                            <View style={{ flex: 1 }}>
+                        {/* BOUTONS */}
+                        <View style={styles.footer}>
+                            {onCancel && (
+                                <View style={{ flex: 1 }}>
+                                    <MyButton
+                                        title={cancelText}
+                                        onPress={onCancel}
+                                        variant="danger"
+                                        style={{ height: 50 }}
+                                    />
+                                </View>
+                            )}
+
+                            <View style={{ flex: 1.5 }}>
                                 <MyButton
-                                    title={cancelText}
-                                    onPress={onCancel}
+                                    title={confirmText}
+                                    onPress={onConfirm}
+                                    iconRight="chevron-forward"
                                     variant="outline"
-                                    style={{ height: 50, borderColor: THEME.colors.backgroundLight }}
+                                    style={{ height: 50 }}
                                 />
                             </View>
-                        )}
-
-                        <View style={{ flex: 1.3 }}>
-                            <MyButton
-                                title={confirmText}
-                                onPress={onConfirm}
-                                variant="glass"
-                                rightIcon={'arrow-right'}
-                                bump
-                            />
                         </View>
-                    </View>
-
-                </LinearGradient>
-            </Animated.View >
+                    </LinearGradient>
+                </Animated.View>
+            </View>
         </Modal>
     );
 }
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.9)', // Fond très noir pour focus total
-        justifyContent: 'center',
-        padding: 24,
-    },
-    backgroundTouch: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-    },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 },
+    backgroundTouch: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+    modalWrapper: { width: '100%', flexShrink: 1 },
     container: {
-        width: '100%',
-        borderRadius: 24,
-        borderWidth: 1,
-        padding: 24,
-        // Shadow pour le relief
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 10,
-        maxHeight: '95%',
-        flexShrink: 1,
+        width: '100%', borderRadius: 24, padding: 24,
+        borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5, shadowRadius: 20, elevation: 10,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        marginBottom: 16,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        width: '100%',
-        marginBottom: 20,
-    },
-    content: {
-        marginBottom: 30,
-        flexShrink: 1,
-    },
-    footer: {
-        flexDirection: 'row',
-        gap: 12,
-    }
+    header: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+    iconContainer: { width: 44, height: 44, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)', width: '100%', marginBottom: 20 },
+    content: { marginBottom: 24, flexShrink: 1 },
+    footer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
 });

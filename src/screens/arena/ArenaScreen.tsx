@@ -5,11 +5,14 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import TicketBadge from '@/components/molecules/TicketBadge';
+import { useUserStore } from '@/store/useUserStore';
 import { getDailyMission } from '@/utils/DailyGameManager';
 import DailyMissionCard from './components/DailyMissionCard';
 import TrainingSelector from './components/TrainingSelector';
 
 export const ArenaScreen = () => {
+    const tickets = useUserStore(state => state.tickets);
     const router = useRouter();
 
     // 1. Récupération dynamique de la mission du jour
@@ -49,16 +52,17 @@ export const ArenaScreen = () => {
     return (
         <View style={styles.container}>
             <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.scrollContent}>
-
-                <CyberText variant="h1" style={{ paddingBottom: 20 }}>
-                    Entraînement
-                </CyberText>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 80 }}>
+                    <CyberText variant="h1" style={{ paddingBottom: 20 }}>
+                        Entraînement
+                    </CyberText>
+                    <TicketBadge count={tickets} />
+                </View>
 
                 {/* 3. Injection des données dynamiques dans la carte */}
                 <DailyMissionCard
                     title={dailyMission.title}
-                    type={dailyMission.typeLabel} // Remplace l'ancien "type"
-                    bonus={dailyMission.bonus}
+                    type={dailyMission.typeLabel}
                     regionId={dailyMission.regionId}
                     onPress={handleDailyMission}
                 />

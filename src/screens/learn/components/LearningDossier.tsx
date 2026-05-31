@@ -1,13 +1,12 @@
-// src/screens/learn/components/LearningDossier.tsx
 import { CyberText } from '@/components/atoms/CyberText';
-import MyButton from '@/components/atoms/MyButton';
 import CountryFocusMap from '@/components/organisms/CountryFocusMap';
 import { getFlagImage } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { functions } from '@/utils/Functions';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface Props {
     country: any;
@@ -26,16 +25,23 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
         }
     };
 
-    // Coordonnées pour la caméra (Fallbacks de sécurité si données manquantes)
+    // 💡 Nouvelle fonction pour le retour en arrière
+    const handlePrev = () => {
+        if (page > 1) {
+            setPage((prev) => (prev - 1) as 1 | 2 | 3);
+        }
+    };
+
     const center: [number, number] = [country.longitude || 0, country.latitude || 0];
 
     // --- PAGE 1 : MÉTADONNÉES ---
     const renderPage1 = () => (
-        <View style={styles.dataGrid}>
-            <DataCell icon="business" label="CAPITALE" value={country.capital || 'Inconnue'} />
-            <DataCell icon="people" label="POPULATION" value={`${functions.stringNumber(country.population || 0)} hab.`} />
-            <DataCell icon="wallet" label="MONNAIE" value={country.currency || 'N/A'} />
-            <DataCell icon="chatbubbles" label="LANGUE" value={country.language || 'N/A'} />
+        <View style={styles.generalInfoBox}>
+            <InfoRow icon="chatbubbles-outline" label="Langue(s) officielle(s)" value={country.language || 'N/A'} />
+            <View style={styles.divider} />
+            <InfoRow icon="wallet-outline" label="Monnaie locale" value={country.currency || 'N/A'} />
+            <View style={styles.divider} />
+            <InfoRow icon="people-outline" label="Population" value={`${functions.stringNumber(country.population || 0)} habitants`} />
         </View>
     );
 
@@ -76,7 +82,7 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
                                     {index < mockDates.length - 1 && <View style={styles.timelineLine} />}
                                 </View>
                                 <View style={styles.timelineContent}>
-                                    <CyberText variant="body" style={{ fontWeight: 'bold', color: THEME.colors.primary }}>
+                                    <CyberText variant="body" style={{ color: THEME.colors.primary }}>
                                         {item.year.toString()}
                                     </CyberText>
                                     <CyberText variant="bodySmall" colorType="secondary" style={{ marginTop: 2, fontStyle: 'italic' }}>
@@ -95,69 +101,85 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
         );
     };
 
-    const getButtonConfig = () => {
-        switch (page) {
-            case 1: return { title: "CONSULTER LE BRIEFING", icon: "document-text-outline" as any, variant: "outline" as any };
-            case 2: return { title: "ANALYSER L'HISTOIRE", icon: "time-outline" as any, variant: "outline" as any };
-            case 3: return { title: "DOSSIER SUIVANT", icon: "chevron-forward" as any, variant: "gradient" as any };
-            default: return { title: "SUIVANT", icon: "chevron-forward" as any, variant: "gradient" as any };
-        }
-    };
-
-    const btnConfig = getButtonConfig();
-
     return (
         <View style={styles.container}>
-
-            {/* 1. CARTE EN FOND */}
             <CountryFocusMap countryCode={country.code} centerCoordinate={center} zoom={2} />
 
-            {/* 2. HUD FLOTTANT */}
             <View style={styles.hudContainer} pointerEvents="box-none">
 
-                {/* --- EN-TÊTE FIXE (Nom + Drapeau) --- */}
+                {/* --- EN-TÊTE FLOTTANT (Drapeau + Pays + Capitale) --- */}
                 <View style={styles.headerArea} pointerEvents="none">
-                    <View style={styles.flagWrapper}>
-                        <Image source={getFlagImage(country.code)} style={styles.flag} resizeMode='cover' />
-                        <View style={styles.flagOverlay} />
-                    </View>
-                    <View style={styles.titleWrapper}>
-                        <CyberText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 2 }}>
-                            CIBLE //
-                        </CyberText>
-                        <CyberText variant="h1" style={{ fontSize: 32, marginTop: -4 }} numberOfLines={1}>
-                            {country.name_fr?.toUpperCase()}
-                        </CyberText>
+                    {/* Le dégradé subtil pour garantir la lisibilité du texte sur la carte */}
+                    <LinearGradient
+                        colors={[THEME.colors.background, 'transparent']}
+                        style={StyleSheet.absoluteFill}
+                    />
+
+                    <View style={styles.headerContent}>
+                        <View style={styles.flagWrapper}>
+                            <Image source={getFlagImage(country.code)} style={styles.flag} resizeMode='cover' />
+                            <View style={styles.flagOverlay} />
+                        </View>
+
+                        <View style={{ flex: 1, justifyContent: 'center' }}>
+                            <CyberText variant="h1" style={styles.countryName} numberOfLines={1}>
+                                {country.name_fr?.toUpperCase()}
+                            </CyberText>
+
+                            {/* La ligne de la capitale avec l'icône */}
+                            <View style={styles.capitalRow}>
+                                <Ionicons name="location" size={14} color={THEME.colors.primary} />
+                                <CyberText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1, marginTop: 1 }}>
+                                    {country.capital || 'CAPITALE INCONNUE'}
+                                </CyberText>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
-                {/* --- ZONE CENTRALE VIDE (Pour manipuler la carte) --- */}
                 <View style={{ flex: 1 }} pointerEvents="none" />
 
-                {/* --- BLOC D'INFORMATION BAS --- */}
+                {/* --- ZONE BASSE --- */}
                 <View style={styles.bottomArea} pointerEvents="box-none">
-
-                    {/* Conteneur des pages avec hauteur maximale pour éviter que le texte ne mange l'écran */}
                     <View style={styles.contentWrapper}>
                         {page === 1 && renderPage1()}
                         {page === 2 && renderPage2()}
                         {page === 3 && renderPage3()}
                     </View>
 
-                    {/* Zone d'action (Bouton + Points) */}
-                    <View style={styles.actionBlock}>
+                    {/* 💡 NOUVELLE PILULE DE NAVIGATION FLOTTANTE */}
+                    <View style={styles.navigationPill}>
+
+                        {/* Bouton Précédent */}
+                        <TouchableOpacity
+                            onPress={handlePrev}
+                            disabled={page === 1}
+                            style={[styles.navIconBtn, { opacity: page === 1 ? 0.2 : 1 }]}
+                        >
+                            <Ionicons name="chevron-back" size={24} color={THEME.colors.text.primary} />
+                        </TouchableOpacity>
+
+                        {/* Indicateurs (au centre) */}
                         <View style={styles.pageIndicatorRow}>
                             <View style={[styles.pageDot, page >= 1 ? styles.pageDotActive : null]} />
                             <View style={[styles.pageDot, page >= 2 ? styles.pageDotActive : null]} />
                             <View style={[styles.pageDot, page === 3 ? styles.pageDotActive : null]} />
                         </View>
 
-                        <MyButton
-                            title={btnConfig.title}
-                            variant={btnConfig.variant}
-                            iconRight={btnConfig.icon}
+                        {/* Bouton Suivant / Terminer */}
+                        <TouchableOpacity
                             onPress={handleNext}
-                        />
+                            style={[styles.navIconBtn, page === 3 && styles.navBtnFinish]}
+                        >
+                            {page < 3 ? (
+                                <Ionicons name="chevron-forward" size={24} color={THEME.colors.text.primary} />
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                    <Ionicons name="checkmark" size={24} color={THEME.colors.primary} />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
                     </View>
                 </View>
 
@@ -166,15 +188,17 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
     );
 }
 
-// Sous-composant
-const DataCell = ({ icon, label, value }: { icon: any, label: string, value: string }) => (
-    <View style={styles.dataCell}>
+// Sous-composant de la liste
+const InfoRow = ({ icon, label, value }: { icon: any, label: string, value: string }) => (
+    <View style={styles.infoRow}>
         <View style={styles.iconBox}>
-            <Ionicons name={icon} size={16} color={THEME.colors.primary} />
+            <Ionicons name={icon} size={18} color={THEME.colors.text.secondary} />
         </View>
         <View style={{ flex: 1 }}>
-            <CyberText variant="caps" style={{ fontSize: 8, color: THEME.colors.text.secondary, letterSpacing: 1 }}>{label}</CyberText>
-            <CyberText variant="body" style={{ fontSize: 13, fontWeight: 'bold', color: THEME.colors.text.primary, marginTop: 2 }} numberOfLines={1}>
+            <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.secondary, letterSpacing: 0.5 }}>
+                {label}
+            </CyberText>
+            <CyberText variant="body" style={{ marginTop: 2, fontSize: 15 }}>
                 {value}
             </CyberText>
         </View>
@@ -185,36 +209,107 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     hudContainer: { flex: 1, justifyContent: 'space-between' },
 
-    // En-tête (Drapeau + Titre)
-    headerArea: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10 },
-    flagWrapper: { width: 70, height: 50, borderRadius: 8, borderWidth: 1, borderColor: THEME.colors.glass.borderHighlight, overflow: 'hidden', marginRight: 16 },
-    flag: { width: '100%', height: '100%' },
-    flagOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.1)' },
-    titleWrapper: { flex: 1 },
+    bottomArea: { paddingHorizontal: 20, justifyContent: 'flex-end' },
+    contentWrapper: { maxHeight: 400, flexShrink: 1, marginBottom: 20 },
 
-    // Zone Basse
-    bottomArea: { paddingHorizontal: 20, paddingBottom: 30, justifyContent: 'flex-end' },
-    contentWrapper: { maxHeight: 280, flexShrink: 1, marginBottom: 20 },
+    generalInfoBox: { backgroundColor: 'rgba(15, 15, 17, 0.85)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 12 },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    iconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+    divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginLeft: 52 },
 
-    // Page 1 : Grid
-    dataGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    dataCell: { width: '48%', backgroundColor: 'rgba(5, 5, 7, 0.85)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', flexDirection: 'row', alignItems: 'center', gap: 10 },
-    iconBox: { width: 32, height: 32, borderRadius: 16, backgroundColor: THEME.colors.primary + '15', justifyContent: 'center', alignItems: 'center' },
-
-    // Pages 2 & 3 : Panneaux Textuels
-    textPanel: { flexShrink: 1, backgroundColor: 'rgba(5, 5, 7, 0.85)', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    textPanel: { flexShrink: 1, backgroundColor: 'rgba(15, 15, 17, 0.85)', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
     panelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12 },
 
-    // Timeline
     timelineRow: { flexDirection: 'row' },
     timelineNode: { width: 20, alignItems: 'center', marginRight: 12 },
-    timelineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.colors.primary, zIndex: 2, marginTop: 4 },
+    timelineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.colors.primary, zIndex: 2, marginTop: 8 },
     timelineLine: { width: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: -4, marginBottom: -4, zIndex: 1 },
-    timelineContent: { flex: 1, paddingBottom: 20 },
+    timelineContent: { flex: 1, paddingBottom: 16 },
 
-    // Action Block (Points + Bouton)
-    actionBlock: { backgroundColor: 'rgba(5, 5, 7, 0.85)', padding: 16, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 },
-    pageIndicatorRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
-    pageDot: { width: 24, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.1)' },
-    pageDotActive: { backgroundColor: THEME.colors.primary, shadowColor: THEME.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 5 },
+    // 💡 NOUVEAUX STYLES DE LA PILULE DE NAVIGATION
+    navigationPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(15, 15, 17, 0.85)',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        borderRadius: 32, // Forme de pilule
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+    },
+    navIconBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    navBtnFinish: {
+
+        borderColor: THEME.colors.primary,
+        borderWidth: 1,
+    },
+    pageIndicatorRow: {
+        flexDirection: 'row',
+        gap: 6,
+    },
+    pageDot: {
+        width: 16,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    pageDotActive: {
+        backgroundColor: THEME.colors.primary,
+        shadowColor: THEME.colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 5,
+    },
+    // --- NOUVEAUX STYLES DE L'EN-TÊTE ---
+    headerArea: {
+        paddingTop: 20,
+        paddingBottom: 80, // Laisse la place au dégradé de s'estomper doucement
+    },
+    headerContent: {
+        flexDirection: 'row',
+        gap: 16,
+        alignItems: 'center',
+        paddingHorizontal: THEME.paddings.horizontal,
+    },
+    countryName: {
+        fontSize: 28,
+        color: THEME.colors.text.primary,
+        marginBottom: 4,
+        // Une légère ombre sur le texte pour qu'il claque par-dessus la carte
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+    },
+    capitalRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    flagWrapper: {
+        width: 72,
+        height: 48,
+        borderRadius: 8,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: THEME.colors.glass.border,
+        // Ombre portée du drapeau
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+    },
+    flag: { width: '100%', height: '100%' },
+    flagOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.05)' },
 });

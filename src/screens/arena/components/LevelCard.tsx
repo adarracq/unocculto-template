@@ -80,8 +80,8 @@ export default function LevelCard({ level, title, subTitle, color, isLocked, bes
                     <View style={{ flex: 1 }}>
                         <View style={styles.headerRow}>
                             <CyberText
-                                variant="h2"
-                                style={{ color: isLocked ? THEME.colors.text.disabled : THEME.colors.text.primary, fontSize: 18 }}
+                                variant="h3"
+                                style={{ color: isLocked ? THEME.colors.text.disabled : THEME.colors.text.primary, }}
                             >
                                 {title}
                             </CyberText>
@@ -89,7 +89,7 @@ export default function LevelCard({ level, title, subTitle, color, isLocked, bes
                                 <View style={[styles.badge, { backgroundColor: activeColor }]}>
                                     <CyberText
                                         variant="caps"
-                                        style={{ fontSize: 9, color: THEME.colors.background, fontWeight: '900' }}
+                                        style={{ fontSize: 9, color: THEME.colors.background, }}
                                     >
                                         {subTitle}
                                     </CyberText>

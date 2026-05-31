@@ -1,5 +1,7 @@
 // src/app/_layout.tsx
 
+import { StreakModal } from '@/components/organisms/StreakModal';
+import { useStreakStore } from '@/store/useStreakStore';
 import { THEME } from '@/theme/theme';
 import {
   PlusJakartaSans_400Regular,
@@ -15,6 +17,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const checkAndIncrementStreak = useStreakStore((state) => state.checkAndIncrementStreak);
+
+  useEffect(() => {
+    // 💡 Dès que l'application démarre, on lance la vérification du jour
+    checkAndIncrementStreak();
+  }, []);
+
   // 1. Chargement des graisses de la police avec des noms personnalisés
   const [loaded, error] = useFonts({
     'Jakarta-Regular': PlusJakartaSans_400Regular,
@@ -34,6 +43,8 @@ export default function RootLayout() {
     return null;
   }
 
+
+
   return (
     // On enveloppe le tout pour capter les gestes tactiles
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: THEME.colors.background }}>
@@ -45,6 +56,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" />
       </Stack>
+      <StreakModal />
     </GestureHandlerRootView>
   );
 }

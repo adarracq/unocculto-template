@@ -2,7 +2,7 @@ import { THEME } from '@/theme/theme';
 import React from 'react';
 import { StyleSheet, Text, TextProps } from 'react-native';
 
-export type TextVariant = 'h1' | 'h2' | 'body' | 'bodySmall' | 'caps';
+export type TextVariant = 'h1' | 'h2' | 'h3' | 'body' | 'bodySmall' | 'caps';
 export type ColorType = 'primary' | 'secondary' | 'disabled' | 'accent';
 
 interface CyberTextProps extends TextProps {
@@ -63,6 +63,12 @@ const styles = StyleSheet.create({
         fontSize: 20,
         letterSpacing: -0.3,
         lineHeight: 26,
+    },
+    h3: {
+        fontFamily: 'Jakarta-SemiBold',
+        fontSize: 16,
+        letterSpacing: -0.3,
+        lineHeight: 24,
     },
 
     // CORPS DE TEXTE

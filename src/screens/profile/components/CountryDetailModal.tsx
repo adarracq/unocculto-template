@@ -30,13 +30,40 @@ export default function CountryDetailModal({ countryCode, visible, onClose }: Pr
     const isUrgent = boxLevel > 0 && boxLevel < 5 && (memoryData?.nextReviewDate || 0) <= Date.now();
 
     const getStatusTheme = () => {
-        if (boxLevel === 0) return { color: THEME.colors.text.disabled, title: "NON EXPLORÉ", text: "Aucune donnée acquise. Apprentissage requis." };
-        if (boxLevel === 5) return { color: THEME.colors.success, title: "100% MAÎTRISÉ", text: "Dossier validé. Intégration totale en mémoire." };
-        if (isUrgent) return { color: THEME.colors.danger, title: "RÉVISION REQUISE", text: "Les données s'effacent. Consolidation prioritaire." };
-        return { color: THEME.colors.primary, title: `EN COURS (Niveau ${boxLevel})`, text: "Exploration partielle. Réseau neural en formation." };
+        if (boxLevel === 0) return {
+            color: THEME.colors.text.disabled,
+            title: "NON EXPLORÉ",
+            text: "Aucune donnée acquise. Apprentissage requis.",
+            icon: 'cube-outline'
+        };
+        if (boxLevel === 5) return {
+            color: THEME.colors.success,
+            title: "100% MAÎTRISÉ",
+            text: "Dossier validé. Intégration totale en mémoire.",
+            icon: 'checkmark-circle'
+        };
+        if (isUrgent) return {
+            color: THEME.colors.danger,
+            title: "RÉVISION REQUISE",
+            text: "Les données s'effacent. Consolidation prioritaire.",
+            icon: 'warning'
+        };
+        return {
+            color: THEME.colors.inProgress,
+            title: `EN COURS (Niveau ${boxLevel})`,
+            text: "Exploration partielle. Réseau neural en formation.",
+            icon: 'sync-circle'
+        };
     };
 
     const statusTheme = getStatusTheme();
+
+    const formatCoordinates = (lat?: number, lng?: number) => {
+        if (lat === undefined || lng === undefined) return 'Données indisponibles';
+        const latDir = lat >= 0 ? 'N' : 'S';
+        const lngDir = lng >= 0 ? 'E' : 'O';
+        return `${Math.abs(lat).toFixed(2)}° ${latDir}, ${Math.abs(lng).toFixed(2)}° ${lngDir}`;
+    };
 
     return (
         <BaseBottomSheet
@@ -46,102 +73,126 @@ export default function CountryDetailModal({ countryCode, visible, onClose }: Pr
         >
             <View style={styles.container}>
 
-                {/* 1. EN-TÊTE FIXE : Drapeau & Capitale */}
-                <View style={styles.headerBox}>
-                    <View style={styles.flagWrapper}>
-                        <Image source={getFlagImage(country.code)} style={styles.headerFlag} resizeMode="cover" />
-                    </View>
-                    <View style={{ flex: 1, justifyContent: 'center' }}>
-                        <CyberText variant="caps" style={{ fontSize: 10, color: THEME.colors.text.secondary, letterSpacing: 1 }}>
-                            CAPITALE
-                        </CyberText>
-                        <CyberText variant="h2" style={{ fontSize: 18, color: THEME.colors.text.primary, marginBottom: 8 }}>
-                            {country.capital || 'Inconnue'}
-                        </CyberText>
+                {/* 1. EN-TÊTE GLOBAL (Infos + Statut) */}
+                <View style={[
+                    styles.headerCard,
+                    { borderColor: statusTheme.color + '40', backgroundColor: statusTheme.color + '08' }
+                ]}>
+                    <View style={styles.headerTop}>
+                        <View style={styles.flagWrapper}>
+                            <Image source={getFlagImage(country.code)} style={styles.rectangularFlag} resizeMode="cover" />
+                        </View>
 
-                        <CyberText variant="caps" style={{ fontSize: 10, color: THEME.colors.text.secondary, letterSpacing: 1 }}>
-                            CONTINENT
-                        </CyberText>
-                        <CyberText variant="body" style={{ fontWeight: 'bold', color: THEME.colors.primary }}>
-                            {country.continentId}
-                        </CyberText>
+                        <View style={styles.headerDetails}>
+                            <CyberText variant="caps" style={styles.label}>
+                                CAPITALE
+                            </CyberText>
+                            <CyberText variant="h2" style={styles.valueH2}>
+                                {country.capital || 'Inconnue'}
+                            </CyberText>
+
+                            <CyberText variant="caps" style={styles.label}>
+                                CONTINENT
+                            </CyberText>
+                            <CyberText variant="body" style={[styles.valueBody, { color: statusTheme.color }]}>
+                                {country.continentId}
+                            </CyberText>
+                        </View>
+                    </View>
+
+                    <View style={[styles.headerDivider, { backgroundColor: statusTheme.color + '20' }]} />
+
+                    <View style={styles.headerStatus}>
+                        <View style={[styles.statusIconBox, { backgroundColor: statusTheme.color + '15' }]}>
+                            <Ionicons name={statusTheme.icon as any} size={20} color={statusTheme.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <CyberText variant="caps" style={{ color: statusTheme.color, fontSize: 11, letterSpacing: 1 }}>
+                                STATUT : {statusTheme.title}
+                            </CyberText>
+                            <CyberText variant="bodySmall" style={{ color: THEME.colors.text.secondary, marginTop: 2 }}>
+                                {statusTheme.text}
+                            </CyberText>
+                        </View>
                     </View>
                 </View>
 
-                {/* 2. BARRE D'ONGLETS FIXE */}
-                <View style={styles.tabsRow}>
-                    <TouchableOpacity onPress={() => setActiveTab('info')} style={[styles.tabButton, activeTab === 'info' && styles.tabButtonActive]}>
-                        <CyberText variant="caps" style={[styles.tabText, activeTab === 'info' && { color: THEME.colors.primary }]}>Fiche</CyberText>
+                {/* 2. SÉLECTEUR D'ONGLETS */}
+                <View style={styles.segmentedControl}>
+                    <TouchableOpacity onPress={() => setActiveTab('info')} style={[styles.segmentBtn, activeTab === 'info' && styles.segmentBtnActive]}>
+                        <CyberText variant="caps" style={[styles.segmentText, activeTab === 'info' && styles.segmentTextActive]}>Fiche</CyberText>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setActiveTab('about')} style={[styles.tabButton, activeTab === 'about' && styles.tabButtonActive]}>
-                        <CyberText variant="caps" style={[styles.tabText, activeTab === 'about' && { color: THEME.colors.primary }]}>Présentation</CyberText>
+                    <TouchableOpacity onPress={() => setActiveTab('about')} style={[styles.segmentBtn, activeTab === 'about' && styles.segmentBtnActive]}>
+                        <CyberText variant="caps" style={[styles.segmentText, activeTab === 'about' && styles.segmentTextActive]}>Présentation</CyberText>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setActiveTab('history')} style={[styles.tabButton, activeTab === 'history' && styles.tabButtonActive]}>
-                        <CyberText variant="caps" style={[styles.tabText, activeTab === 'history' && { color: THEME.colors.primary }]}>Histoire</CyberText>
+                    <TouchableOpacity onPress={() => setActiveTab('history')} style={[styles.segmentBtn, activeTab === 'history' && styles.segmentBtnActive]}>
+                        <CyberText variant="caps" style={[styles.segmentText, activeTab === 'history' && styles.segmentTextActive]}>Histoire</CyberText>
                     </TouchableOpacity>
                 </View>
 
                 {/* 3. ZONE DE CONTENU VARIABLE */}
                 <View style={styles.contentArea}>
 
-                    {/* ONGLET 1 : FICHE & STATUT */}
+                    {/* ONGLET 1 : FICHE ALLÉGÉE */}
                     {activeTab === 'info' && (
-                        <View style={{ gap: 20 }}>
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                             <View style={styles.generalInfoBox}>
                                 <InfoRow icon="chatbubbles-outline" label="Langue(s) officielle(s)" value={country.language || 'N/A'} />
                                 <View style={styles.divider} />
                                 <InfoRow icon="wallet-outline" label="Monnaie locale" value={country.currency || 'N/A'} />
                                 <View style={styles.divider} />
                                 <InfoRow icon="people-outline" label="Population" value={`${functions.stringNumber(country.population || 0)} habitants`} />
+                                <View style={styles.divider} />
+                                <InfoRow icon="compass-outline" label="Coordonnées" value={formatCoordinates(country.latitude, country.longitude)} />
                             </View>
-
-                            <View style={[styles.statusBox, { borderColor: statusTheme.color + '50', backgroundColor: statusTheme.color + '05' }]}>
-                                <CyberText variant="caps" style={{ fontSize: 10, color: THEME.colors.text.secondary, marginBottom: 8, letterSpacing: 1 }}>STATUT D'ACQUISITION</CyberText>
-                                <CyberText variant="h2" style={{ color: statusTheme.color, marginBottom: 4 }}>
-                                    {statusTheme.title}
-                                </CyberText>
-                                <CyberText variant="bodySmall" style={{ color: THEME.colors.text.secondary }}>
-                                    {statusTheme.text}
-                                </CyberText>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* ONGLET 2 : PRÉSENTATION (Scrollable si long) */}
-                    {activeTab === 'about' && (
-                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                            <CyberText variant="body" style={{ lineHeight: 26, color: THEME.colors.text.primary, fontSize: 15 }}>
-                                {country.intro_fr || "Aucune description approfondie n'est disponible pour ce territoire à l'heure actuelle."}
-                            </CyberText>
                         </ScrollView>
                     )}
 
-                    {/* ONGLET 3 : HISTOIRE (Timeline scrollable) */}
+                    {/* ONGLET 2 : PRÉSENTATION */}
+                    {activeTab === 'about' && (
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                            <View style={styles.textPanel}>
+                                <View style={styles.panelHeader}>
+                                    <Ionicons name="information-circle" size={20} color={statusTheme.color} style={{ marginRight: 8 }} />
+                                    <CyberText variant="caps" style={{ color: statusTheme.color, letterSpacing: 1 }}>
+                                        INFORMATIONS
+                                    </CyberText>
+                                </View>
+                                <CyberText variant="body" style={{ lineHeight: 26, color: THEME.colors.text.primary, fontSize: 15 }}>
+                                    {functions.addLineBreaks(country.intro_fr) || "Aucune description approfondie n'est disponible pour ce territoire à l'heure actuelle."}
+                                </CyberText>
+                            </View>
+                        </ScrollView>
+                    )}
+
+                    {/* ONGLET 3 : HISTOIRE */}
                     {activeTab === 'history' && (
                         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                            {(country.dates && country.dates.length > 0) ? (
-                                <View style={styles.timelineContainer}>
-                                    {country.dates.map((item: any, index: number) => (
+                            <View style={styles.textPanel}>
+
+                                {(country.dates && country.dates.length > 0) ? (
+                                    country.dates.map((item: any, index: number) => (
                                         <View key={index} style={styles.timelineRow}>
-                                            <View style={styles.timelineYearBox}>
-                                                <CyberText variant="body" style={{ fontWeight: 'bold', color: THEME.colors.primary, fontSize: 16 }}>
-                                                    {item.year}
-                                                </CyberText>
+                                            <View style={styles.timelineNode}>
+                                                <View style={[styles.timelineDot, { backgroundColor: statusTheme.color }]} />
+                                                {index < country.dates.length - 1 && <View style={styles.timelineLine} />}
                                             </View>
-                                            <View style={styles.timelineDivider} />
                                             <View style={styles.timelineContent}>
-                                                <CyberText variant="body" style={{ color: THEME.colors.text.primary }}>
+                                                <CyberText variant="body" style={{ color: statusTheme.color }}>
+                                                    {item.year.toString()}
+                                                </CyberText>
+                                                <CyberText variant="bodySmall" colorType="secondary" style={{ marginTop: 2, fontStyle: 'italic' }}>
                                                     {item.event}
                                                 </CyberText>
                                             </View>
                                         </View>
-                                    ))}
-                                </View>
-                            ) : (
-                                <CyberText variant="bodySmall" colorType="disabled" align="center" style={{ paddingVertical: 20 }}>
-                                    Aucune donnée chronologique disponible.
-                                </CyberText>
-                            )}
+                                    ))
+                                ) : (
+                                    <CyberText variant="bodySmall" colorType="disabled" align="center" style={{ paddingVertical: 20 }}>
+                                        Aucune archive chronologique disponible.
+                                    </CyberText>
+                                )}
+                            </View>
                         </ScrollView>
                     )}
 
@@ -151,17 +202,17 @@ export default function CountryDetailModal({ countryCode, visible, onClose }: Pr
     );
 }
 
-// Composant interne pour rendre les lignes d'informations
+// Composant interne
 const InfoRow = ({ icon, label, value }: { icon: any, label: string, value: string }) => (
     <View style={styles.infoRow}>
         <View style={styles.iconBox}>
-            <Ionicons name={icon} size={18} color={THEME.colors.text.secondary} />
+            <Ionicons name={icon} size={18} color={THEME.colors.text.primary} />
         </View>
-        <View style={{ flex: 1 }}>
-            <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.secondary, letterSpacing: 0.5 }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+            <CyberText variant="caps" style={{ fontSize: 10, color: THEME.colors.text.disabled, letterSpacing: 0.5 }}>
                 {label}
             </CyberText>
-            <CyberText variant="body" style={{ fontWeight: 'bold', marginTop: 2, fontSize: 15 }}>
+            <CyberText variant="body" style={{ marginTop: 2, fontSize: 15, color: THEME.colors.text.primary }}>
                 {value}
             </CyberText>
         </View>
@@ -174,74 +225,110 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
 
-    // En-tête
-    headerBox: {
+    // --- EN-TÊTE CARD ---
+    headerCard: {
+        borderRadius: 20,
+        borderWidth: 1,
+        padding: 16,
+        marginBottom: 20,
+    },
+    headerTop: {
         flexDirection: 'row',
         gap: 16,
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
-        marginBottom: 20,
     },
     flagWrapper: {
-        width: 80,
+        width: 86,
         height: 60,
-        borderRadius: 8,
+        borderRadius: 10,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.15)',
     },
-    headerFlag: { width: '100%', height: '100%' },
-
-    // Onglets
-    tabsRow: {
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
-        marginBottom: 20
+    rectangularFlag: {
+        width: '100%',
+        height: '100%',
     },
-    tabButton: {
+    headerDetails: {
         flex: 1,
-        paddingVertical: 12,
+        justifyContent: 'center',
+    },
+    label: {
+        fontSize: 10,
+        color: THEME.colors.text.secondary,
+        letterSpacing: 1,
+    },
+    valueH2: {
+        fontSize: 20,
+        color: THEME.colors.text.primary,
+        marginBottom: 8,
+    },
+    valueBody: {
+        color: THEME.colors.primary,
+        fontSize: 15,
+    },
+    headerDivider: {
+        height: 1,
+        marginVertical: 14,
+    },
+    headerStatus: {
+        flexDirection: 'row',
         alignItems: 'center',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent'
-    },
-    tabButtonActive: { borderBottomColor: THEME.colors.primary },
-    tabText: { fontSize: 12, color: THEME.colors.text.disabled, letterSpacing: 1 },
-
-    // Zone de Contenu
-    contentArea: {
-        height: 320, // 💡 Hauteur fixe pour éviter que la modale ne saute en changeant d'onglet
-    },
-
-    // Fiche & Infos Générales
-    generalInfoBox: {
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
         gap: 12,
     },
-    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    iconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
-    divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginLeft: 52 },
-
-    // Boîte de Statut
-    statusBox: {
-        borderWidth: 1,
-        padding: 16,
-        borderRadius: 12,
+    statusIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 
-    // Timeline (Dates Clés)
-    timelineContainer: { marginLeft: 4, marginTop: 4 },
-    timelineRow: { flexDirection: 'row', gap: 16 },
-    timelineYearBox: { width: 50, alignItems: 'flex-end', paddingTop: 2 },
-    timelineDivider: { width: 2, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 6 },
-    timelineContent: { flex: 1, paddingBottom: 20 },
+    // --- SÉLECTEUR D'ONGLETS ---
+    segmentedControl: { flexDirection: 'row', backgroundColor: THEME.colors.glass.background, borderRadius: 14, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: THEME.colors.glass.border },
+    segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    segmentBtnActive: { backgroundColor: THEME.colors.glass.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+    segmentText: { color: THEME.colors.text.disabled, fontSize: 12 },
+    segmentTextActive: { color: THEME.colors.text.primary },
+
+    contentArea: {
+        height: 340, // Hauteur ajustée car l'en-tête est plus grand
+    },
+
+    // --- FICHE (Onglet 1) ---
+    generalInfoBox: {
+        backgroundColor: THEME.colors.glass.background,
+        padding: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: THEME.colors.glass.border,
+        gap: 14,
+    },
+    infoRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+    iconBox: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.03)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+    divider: { height: 1, backgroundColor: THEME.colors.glass.border, marginLeft: 56 },
+
+    // --- PANNEAUX TEXTUELS (Onglets 2 & 3) ---
+    textPanel: {
+        backgroundColor: THEME.colors.glass.background,
+        borderRadius: 20,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: THEME.colors.glass.border
+    },
+    panelHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: THEME.colors.glass.border,
+        paddingBottom: 16
+    },
+
+    // --- TIMELINE (Onglet 3) ---
+    timelineRow: { flexDirection: 'row' },
+    timelineNode: { width: 24, alignItems: 'center', marginRight: 16 },
+    timelineDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: THEME.colors.primary, zIndex: 2, marginTop: 6 },
+    timelineLine: { width: 2, flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginTop: -6, marginBottom: -6, zIndex: 1 },
+    timelineContent: { flex: 1, paddingBottom: 24 },
 });

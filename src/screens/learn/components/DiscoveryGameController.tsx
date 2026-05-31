@@ -80,5 +80,6 @@ const styles = StyleSheet.create({
     },
     gameWrapper: {
         flex: 1,
+        paddingBottom: 60,
     }
 });

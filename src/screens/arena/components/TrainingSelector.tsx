@@ -19,36 +19,36 @@ export default function TrainingSelector({ onSelect }: SelectorProps) {
                 <TrainingCard
                     title="PAYS"
                     subtitle="Localisation"
-                    icon="earth"
+                    icon="globe-outline"
                     color="#4A90E2" // Bleu
                     onPress={() => onSelect('country')}
                 />
                 <TrainingCard
                     title="DRAPEAUX"
                     subtitle="Identification"
-                    icon="flag"
+                    icon="flag-outline"
                     color="#E24A4A" // Rouge
                     onPress={() => onSelect('flag')}
                 />
                 <TrainingCard
                     title="CAPITALES"
                     subtitle="Connaissances"
-                    icon="business"
+                    icon="trail-sign-outline"
                     color="#4AE290" // Vert
                     onPress={() => onSelect('capital')}
                 />
                 <TrainingCard
                     title="VILLES"
-                    subtitle="Connaissances"
-                    icon="location-sharp"
+                    subtitle="Placer"
+                    icon="locate"
                     color="#E2904A" // Orange
                     onPress={() => { }}
                     isLocked={true}
                 />
                 <TrainingCard
                     title="EAUX"
-                    subtitle="Localisation"
-                    icon="water"
+                    subtitle="Retrouver"
+                    icon="water-outline"
                     color="#4AE2E2" // Cyan
                     onPress={() => { }}
                     isLocked={true}
@@ -89,7 +89,7 @@ const TrainingCard = ({ title, subtitle, icon, color, onPress, isLocked }: any) 
                 </View>
 
                 <View style={styles.textGroup}>
-                    <CyberText variant="body" style={{ fontWeight: 'bold' }}>{title}</CyberText>
+                    <CyberText variant="h3">{title}</CyberText>
                     <CyberText variant="bodySmall" colorType="secondary">{subtitle}</CyberText>
                 </View>
 

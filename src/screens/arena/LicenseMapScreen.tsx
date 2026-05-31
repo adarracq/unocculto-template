@@ -1,5 +1,7 @@
 import { CyberText } from '@/components/atoms/CyberText';
+import TicketBadge from '@/components/molecules/TicketBadge';
 import { useArenaStore } from '@/store/useArenaStore';
+import { useUserStore } from '@/store/useUserStore';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +13,7 @@ export const LicenseMapScreen = () => {
     const router = useRouter();
 
     const progression = useArenaStore((state) => state.progression);
+    const tickets = useUserStore(state => state.tickets);
     const { mode } = useLocalSearchParams<{ mode: string }>();
     const currentMode = mode || 'country';
 
@@ -60,16 +63,15 @@ export const LicenseMapScreen = () => {
             </TouchableOpacity>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
                 <View style={styles.header}>
                     <CyberText variant="h1" style={{ color: THEME.colors.text.primary }}>
                         {info.title}
                     </CyberText>
-                    <CyberText variant="caps" style={{ color: THEME.colors.text.secondary, letterSpacing: 2 }}>
+                    <CyberText variant="caps" style={{ color: THEME.colors.text.secondary, letterSpacing: 2, marginBottom: 10 }}>
                         SÉLECTION DE ZONE
                     </CyberText>
+                    <TicketBadge count={tickets} />
                 </View>
-
                 <View style={styles.gridContainer}>
                     <View style={styles.row}>
                         <RegionBadge name="EUROPE" code="EUR" level={levelEUR} onPress={() => navigateToRegion('EUR')} />
@@ -103,14 +105,10 @@ export const LicenseMapScreen = () => {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: THEME.colors.background,
-        paddingTop: 60,
-    },
+    container: { flex: 1, paddingTop: THEME.paddings.top, paddingBottom: THEME.paddings.bottom },
     backArrow: {
         position: 'absolute',
-        top: 60,
+        top: THEME.paddings.top,
         left: 20,
         zIndex: 10
     },
@@ -119,7 +117,7 @@ const styles = StyleSheet.create({
         flexGrow: 1
     },
     header: {
-        marginBottom: 20,
+        marginBottom: 40,
         gap: 0,
         justifyContent: 'flex-end',
         alignItems: 'flex-end'

@@ -16,6 +16,7 @@ export const functions = {
     stringDateToString,
     simpleDateToString,
     stringNumber,
+    addLineBreaks,
     vibrate,
 }
 
@@ -329,10 +330,14 @@ function stringNumber(num: number): string {
     } else if (num >= 1000000) {
         return `${(num / 1000000).toFixed(1)} Millions`;
     } else if (num >= 1000) {
-        return `${(num / 1000).toFixed(1)} 000`;
+        return `${(num / 1000).toFixed(0)} 000`;
     } else {
         return num.toString();
     }
+}
+
+function addLineBreaks(text: string) {
+    return text.replace(/\. /g, '.\n\n');
 }
 
 function vibrate(type:

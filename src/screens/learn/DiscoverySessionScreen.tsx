@@ -8,9 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useLearningStore } from '@/store/useLearningStore';
+import { LinearGradient } from 'expo-linear-gradient';
 import DiscoveryGameController from './components/DiscoveryGameController';
 import LearningDossier from './components/LearningDossier';
 
@@ -48,27 +48,31 @@ export default function DiscoverySessionScreen() {
     // ==========================================
     if (phase === 'finished' || sessionCountries.length === 0) {
         return (
-            <SafeAreaView style={styles.container}>
+            <LinearGradient
+                colors={[THEME.colors.backgroundLight, THEME.colors.background]}
+                style={styles.container}
+            >
                 <View style={styles.finishedContent}>
                     <View style={styles.successGlow}>
-                        <Ionicons name="checkmark-done-circle" size={80} color={THEME.colors.primary} />
+                        <Ionicons name="checkmark-circle" size={80} color={THEME.colors.primary} />
                     </View>
                     <CyberText variant="h1" align="center" style={{ marginBottom: THEME.metrics.spacing.md }}>
                         DONNÉES ASSIMILÉES
                     </CyberText>
                     <CyberText variant="body" colorType="secondary" align="center" style={{ paddingHorizontal: 40, marginBottom: 40 }}>
-                        Ces {sessionCountries.length} territoires ont été intégrés à votre réseau neural.
+                        Ces {sessionCountries.length} pays ont été ajoutés à vos révisions.
                     </CyberText>
 
                     <View style={{ width: '100%', paddingHorizontal: 20 }}>
                         <MyButton
-                            title="RETOUR AU QG"
-                            iconRight="home-outline"
+                            title="TERMINER"
+                            iconLeft="home-outline"
+                            iconRight="chevron-forward"
                             onPress={handleFinishSession}
                         />
                     </View>
                 </View>
-            </SafeAreaView>
+            </LinearGradient>
         );
     }
 
@@ -91,7 +95,9 @@ export default function DiscoverySessionScreen() {
     // PHASE 1 : DOSSIER D'APPRENTISSAGE
     // ==========================================
     return (
-        <SafeAreaView style={styles.container}>
+        <View
+            style={styles.container}
+        >
             {/* HEADER : Navigation et Progression */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -122,12 +128,12 @@ export default function DiscoverySessionScreen() {
                 onNextCountry={handleNextCountry}
             />
 
-        </SafeAreaView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: THEME.colors.background },
+    container: { flex: 1, paddingTop: THEME.paddings.top, paddingBottom: THEME.paddings.bottom },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
     closeBtn: { width: 40, height: 40, justifyContent: 'center' },
     progressContainer: { flex: 1, paddingHorizontal: 16 },

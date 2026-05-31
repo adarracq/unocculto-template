@@ -149,7 +149,7 @@ export default function LocationGameView({ step, country, onValid }: Props) {
                             <CyberText variant="caps" style={{ color: THEME.colors.background }}>
                                 POURSUIVRE
                             </CyberText>
-                            <Ionicons name="arrow-forward" size={20} color={THEME.colors.background} style={{ marginLeft: 8 }} />
+                            <Ionicons name="chevron-forward" size={20} color={THEME.colors.background} style={{ marginLeft: 8 }} />
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity
