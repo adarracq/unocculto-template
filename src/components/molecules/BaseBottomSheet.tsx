@@ -1,6 +1,7 @@
 // src/components/molecules/BaseBottomSheet.tsx
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
+import { feedbackService } from '@/utils/feedbackService';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ReactNode } from 'react';
@@ -20,7 +21,10 @@ export const BaseBottomSheet = ({ isVisible, onClose, title, children }: BottomS
             animationType="slide"
             transparent={true}
             statusBarTranslucent={true}
-            onRequestClose={onClose}
+            onRequestClose={() => {
+                feedbackService.light();
+                onClose();
+            }}
         >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -28,17 +32,17 @@ export const BaseBottomSheet = ({ isVisible, onClose, title, children }: BottomS
                 style={styles.keyboardRoot}
             >
                 <View style={styles.overlay}>
-                    <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.modalContainer}>
+                    <LinearGradient colors={[THEME.colors.backgroundVeryLight, THEME.colors.background]} style={styles.modalContainer}>
 
                         <View style={styles.dragHandleContainer}>
                             <View style={styles.dragHandle} />
                         </View>
 
                         <View style={styles.header}>
-                            <CyberText variant="h2" style={{ color: THEME.colors.text.primary, fontSize: 18 }}>
+                            <MyText variant="h2" style={{ color: THEME.colors.text.primary, fontSize: 18 }}>
                                 {title.toUpperCase()}
-                            </CyberText>
-                            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                            </MyText>
+                            <TouchableOpacity onPress={() => { feedbackService.error(); onClose(); }} style={styles.closeBtn}>
                                 <Ionicons name="close" color={THEME.colors.text.secondary} size={20} />
                             </TouchableOpacity>
                         </View>
@@ -76,7 +80,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderColor: THEME.colors.glass.border,
         maxHeight: '90%',
-        paddingHorizontal: 20,
+        paddingHorizontal: THEME.paddings.horizontal,
         paddingBottom: Platform.OS === 'ios' ? 40 : 24,
         width: '100%',
     },
@@ -99,7 +103,7 @@ const styles = StyleSheet.create({
     },
     closeBtn: {
         backgroundColor: 'rgba(255,255,255,0.05)',
-        width: 36, height: 36, borderRadius: 18,
+        width: 36, height: 36, borderRadius: THEME.metrics.radius.md,
         justifyContent: 'center', alignItems: 'center',
     },
     scrollView: {

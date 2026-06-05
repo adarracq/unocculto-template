@@ -1,15 +1,15 @@
 import { THEME } from '@/theme/theme';
 import MapLibreGL from '@maplibre/maplibre-react-native';
-import { useEffect, useMemo, useRef } from 'react';
+// 💡 1. Import de memo
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
-// 💡 Import de l'utilitaire global
+import { feedbackService } from '@/utils/feedbackService';
 import { getScaledWorldGeoJSON } from '@/utils/geoUtils';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Pour éviter les warnings
 MapLibreGL.setAccessToken(null);
 
-// STYLE VIDE ABSOLU (Noir, sans sources)
 const VOID_STYLE = {
     version: 8,
     name: "Void",
@@ -34,9 +34,12 @@ interface Props {
     zoomLevel?: number;
     defaultCenter?: [number, number];
     defaultZoom?: number;
+    defaultFillColor?: string;
+    hideUncoloredBorders?: boolean;
 }
 
-export default function InteractiveMap({
+// 💡 2. Transformation en fonction fléchée pour utiliser memo()
+const InteractiveMap = ({
     countryColors = {},
     onCountryPress,
     selectedCountry,
@@ -44,8 +47,10 @@ export default function InteractiveMap({
     isFullHeight,
     zoomLevel = 3,
     defaultCenter = [2.35, 48.85],
-    defaultZoom = 1
-}: Props) {
+    defaultZoom = 1,
+    defaultFillColor = '#2A2A2A',
+    hideUncoloredBorders = false
+}: Props) => {
     const cameraRef = useRef<MapLibreGL.Camera>(null);
 
     useEffect(() => {
@@ -63,10 +68,8 @@ export default function InteractiveMap({
         return () => clearTimeout(timer);
     }, [focusCoordinates, zoomLevel]);
 
-    // --- LOGIQUE COULEURS ---
     const fillColorExpression = useMemo(() => {
         const cases: any[] = [];
-
         Object.entries(countryColors).forEach(([code, color]) => {
             cases.push(code, color);
         });
@@ -75,23 +78,39 @@ export default function InteractiveMap({
             cases.push(selectedCountry, THEME.colors.primary);
         }
 
-        if (cases.length === 0) {
-            return '#2A2A2A';
-        }
+        if (cases.length === 0) return defaultFillColor;
+        return ['match', ['get', 'iso_a2_eh'], ...cases, defaultFillColor];
+    }, [countryColors, selectedCountry, defaultFillColor]);
 
-        return ['match', ['get', 'iso_a2_eh'], ...cases, '#2A2A2A'];
-    }, [countryColors, selectedCountry]);
+    const lineColorExpression = useMemo(() => {
+        if (!hideUncoloredBorders) return THEME.colors.glass.border;
+
+        const cases: any[] = [];
+        Object.keys(countryColors).forEach(code => {
+            cases.push(code, THEME.colors.glass.borderHighlight);
+        });
+
+        if (cases.length === 0) return 'transparent';
+        return ['match', ['get', 'iso_a2_eh'], ...cases, 'transparent'];
+    }, [countryColors, hideUncoloredBorders]);
 
     const handleShapePress = (e: any) => {
+        if (!onCountryPress) return;
+
         const feature = e.features[0];
         const countryCode = feature?.properties?.iso_a2_eh;
 
-        if (countryCode && onCountryPress) {
-            onCountryPress(countryCode);
+        if (countryCode) {
+            // Le retour haptique se déclenche instantanément
+            feedbackService.light();
+
+            // 💡 3. ASTUCE DE PERFORMANCE : On décale l'appel de mise à jour d'état
+            requestAnimationFrame(() => {
+                onCountryPress(countryCode);
+            });
         }
     };
 
-    // 💡 RÉCUPÉRATION DU GEOJSON (Mis en cache et déjà calculé !)
     const scaledGeoJSON = useMemo(() => {
         return getScaledWorldGeoJSON();
     }, []);
@@ -118,8 +137,8 @@ export default function InteractiveMap({
                 <MapLibreGL.ShapeSource
                     id="countriesSource"
                     shape={scaledGeoJSON}
-                    onPress={handleShapePress}
-                    hitbox={{ width: 50, height: 50 }}
+                    // 💡 4. Évite d'attacher l'écouteur côté natif si aucun callback n'est fourni
+                    onPress={onCountryPress ? handleShapePress : undefined}
                 >
                     <MapLibreGL.FillLayer
                         id="countriesFill"
@@ -131,24 +150,47 @@ export default function InteractiveMap({
                     <MapLibreGL.LineLayer
                         id="countriesLine"
                         style={{
-                            lineColor: THEME.colors.glass.border,
-                            lineWidth: 0.5,
-                            lineOpacity: 0.5
+                            lineColor: lineColorExpression as any,
+                            lineWidth: hideUncoloredBorders ? 1 : 0.5,
+                            lineOpacity: hideUncoloredBorders ? 1 : 0.5
                         }}
                     />
                 </MapLibreGL.ShapeSource>
             </MapLibreGL.MapView>
+            <>
+                <LinearGradient
+                    colors={['transparent', THEME.colors.background,]}
+                    style={styles.gradientOverlay}
+                    pointerEvents="none"
+                />
+                <LinearGradient
+                    colors={[THEME.colors.background, 'transparent']}
+                    style={styles.gradientOverlayTop}
+                    pointerEvents="none"
+                />
+            </>
         </View>
     );
-}
+};
+
+// 💡 6. Export du composant mémorisé
+export default memo(InteractiveMap);
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        width: '100%',
-        backgroundColor: THEME.colors.background,
+    container: { flex: 1, width: '100%', backgroundColor: THEME.colors.background },
+    map: { flex: 1 },
+    gradientOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '20%'
     },
-    map: {
-        flex: 1
-    }
+    gradientOverlayTop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '20%'
+    },
 });

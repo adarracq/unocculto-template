@@ -2,51 +2,56 @@
 
 export const THEME = {
     colors: {
-        background: '#050505',
-        backgroundLight: '#1a1a1a',
-        backgroundVeryLight: '#2a2a2c',
-        primary: '#D4AF37',
-        accent: '#00F0FF',
-        danger: '#FF4C4C',
-        inProgress: '#608cd7',
-        success: '#4CAF50',
+        background: '#09090B', // Zinc-950 : Un noir très profond et élégant
+        backgroundLight: '#18181B', // Zinc-900
+        backgroundVeryLight: '#27272A', // Zinc-800
+        primary: '#D4AF37', // Or premium maintenu
+        accent: '#00F0FF', // Cyan pur
+        danger: '#FF453A', // Rouge iOS Dark Mode (plus tranchant)
+        inProgress: '#38BDF8', // Bleu ciel éclatant (bien plus lisible que le pastel)
+        success: '#30D158', // Vert iOS Dark Mode (plus néon, moins terne)
 
-        // --- NOUVEAU : Couleurs de progression ---
         levels: {
-            locked: '#333333',     // Gris sombre pour le cadenas/vide
-            bronze: '#CD7F32',     // Niveau 1
-            silver: '#C0C0C0',     // Niveau 2
-            gold: '#D4AF37',       // Niveau 3 (Utilise le même Or que la couleur primaire)
+            locked: '#333333',
+            bronze: '#CD7F32',
+            silver: '#C0C0C0',
+            gold: '#D4AF37',
         },
-        // -----------------------------------------
+
+        modes: {
+            country: '#00E5FF', // Hologram Azure
+            flag: '#FF2A6D',    // Plasma Pink
+            capital: '#B026FF', // Cyber Purple
+        },
 
         glass: {
-            background: 'rgba(255, 255, 255, 0.02)',
+            background: 'rgba(255, 255, 255, 0.03)',
             border: 'rgba(255, 255, 255, 0.08)',
-            borderHighlight: 'rgba(255, 255, 255, 0.25)',
+            borderHighlight: 'rgba(255, 255, 255, 0.20)', // Légèrement adouci pour plus de finesse
         },
         text: {
             primary: '#F8F9FA',
-            secondary: '#A0AABF',
-            disabled: '#4A5060',
+            secondary: '#A1A1AA', // Zinc-400 (plus neutre)
+            disabled: '#52525B', // Zinc-600
         }
     },
     paddings: {
-        top: 40,
+        top: 20,
         horizontal: 20,
-        bottom: 80,
+        bottom: 20,
     },
 
     metrics: {
         radius: {
             sm: 12,
-            md: 20, // Rayons plus généreux pour un aspect moderne
+            md: 20,
             lg: 32,
             round: 9999,
         },
         spacing: {
-            xs: 4,
-            sm: 8,
+            xxs: 4,
+            xs: 8,
+            sm: 12,
             md: 16,
             lg: 24,
             xl: 32,

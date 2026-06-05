@@ -1,4 +1,3 @@
-// src/screens/arena/geogames/components/ArcadeSaisieControls.tsx
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -6,14 +5,13 @@ import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface Props {
     status: 'playing' | 'success' | 'error';
-    onSubmit: (text: string) => void;
+    onSubmit: (text: string) => void | boolean;
     placeholder?: string;
 }
 
 export default function ArcadeSaisieControls({ status, onSubmit, placeholder = "ENTREZ LA RÉPONSE..." }: Props) {
     const [text, setText] = useState('');
 
-    // On efface le champ de texte dès que le hook passe à la question suivante
     useEffect(() => {
         if (status === 'playing') {
             setText('');
@@ -22,10 +20,17 @@ export default function ArcadeSaisieControls({ status, onSubmit, placeholder = "
 
     const handleSend = () => {
         if (!text.trim() || status !== 'playing') return;
-        onSubmit(text.trim());
+
+        // 💡 LIGNE MODIFIÉE : On capture la réponse du parent
+        const shouldClearImmediately = onSubmit(text.trim());
+
+        // Si le parent renvoie "true", on vide le champ instantanément, 
+        // sans attendre que le statut change !
+        if (shouldClearImmediately === true) {
+            setText('');
+        }
     };
 
-    // Style de la bordure du champ selon le statut de correction
     const getInputColor = () => {
         if (status === 'success') return THEME.colors.success;
         if (status === 'error') return THEME.colors.danger;
@@ -42,11 +47,13 @@ export default function ArcadeSaisieControls({ status, onSubmit, placeholder = "
                     onChangeText={setText}
                     placeholder={placeholder}
                     placeholderTextColor={THEME.colors.text.disabled}
-                    editable={status === 'playing'}
+                    // 💡 LIGNE SUPPRIMÉE : On ne met plus "editable={false}" pour ne pas tuer le focus clavier
                     autoCapitalize="characters"
                     autoCorrect={false}
                     onSubmitEditing={handleSend}
                     style={styles.inputField}
+                    autoFocus={true}
+                    blurOnSubmit={false}
                 />
 
                 <TouchableOpacity
@@ -83,7 +90,7 @@ const styles = StyleSheet.create({
         flex: 1,
         color: THEME.colors.text.primary,
         fontSize: 16,
-        fontFamily: 'Courier New', // Style console
+        fontFamily: 'Courier New',
         height: '100%'
     },
     sendButton: {

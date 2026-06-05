@@ -1,18 +1,17 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import TicketBadge from '@/components/molecules/TicketBadge';
-import { useUserStore } from '@/store/useUserStore';
 import { getDailyMission } from '@/utils/DailyGameManager';
+import { feedbackService } from '@/utils/feedbackService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DailyMissionCard from './components/DailyMissionCard';
 import TrainingSelector from './components/TrainingSelector';
 
 export const ArenaScreen = () => {
-    const tickets = useUserStore(state => state.tickets);
     const router = useRouter();
 
     // 1. Récupération dynamique de la mission du jour
@@ -21,6 +20,7 @@ export const ArenaScreen = () => {
 
 
     const handleDailyMission = () => {
+        feedbackService.medium();
         // 2. Redirection dynamique basée sur la fonction getDailyMission
         router.push({
             pathname: '/arena/license-map',
@@ -50,32 +50,30 @@ export const ArenaScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.scrollContent}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 80 }}>
-                    <CyberText variant="h1" style={{ paddingBottom: 20 }}>
-                        Entraînement
-                    </CyberText>
-                    <TicketBadge count={tickets} />
-                </View>
+        <LinearGradient
+            colors={[THEME.colors.backgroundVeryLight, THEME.colors.background]}
+            style={[styles.container, { paddingTop: THEME.paddings.top + useSafeAreaInsets().top }]}
+        >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <MyText variant="h1" >
+                    Entraînement
+                </MyText>
+            </View>
 
-                {/* 3. Injection des données dynamiques dans la carte */}
-                <DailyMissionCard
-                    title={dailyMission.title}
-                    type={dailyMission.typeLabel}
-                    regionId={dailyMission.regionId}
-                    onPress={handleDailyMission}
-                />
+            {/* 3. Injection des données dynamiques dans la carte */}
+            <DailyMissionCard
+                title={dailyMission.title}
+                type={dailyMission.typeLabel}
+                regionId={dailyMission.regionId}
+                onPress={handleDailyMission}
+            />
 
-                <TrainingSelector onSelect={handleSelectMode} />
+            <TrainingSelector onSelect={handleSelectMode} />
 
-
-            </LinearGradient>
-        </View>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: THEME.colors.background },
-    scrollContent: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 40 },
+    container: { flex: 1, paddingHorizontal: THEME.paddings.horizontal, paddingTop: THEME.paddings.top, gap: THEME.metrics.spacing.md },
 });

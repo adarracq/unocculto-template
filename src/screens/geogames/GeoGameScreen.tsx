@@ -1,5 +1,5 @@
-import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
+import { MyText } from '@/components/atoms/MyText';
 import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet';
 import { GAME_CONFIG, GameMode } from '@/constants/GameConfig';
 import { ALL_COUNTRIES } from '@/data/Countries';
@@ -18,6 +18,7 @@ import GameLevel1View from './components/GameLevel1View';
 import GameLevel2View from './components/GameLevel2View';
 import GameLevel3View from './components/GameLevel3View';
 import GameLevel4View from './components/GameLevel4View';
+import GameLevel5View from './components/GameLevel5View';
 
 export interface GameViewProps {
     engine: ReturnType<typeof useArcadeGame>;
@@ -40,7 +41,7 @@ const calculateStats = (accuracy: number, timeTaken: number, errors: number): Ga
     if (accuracy === 100) {
         grade = 'PARFAIT';
         gradeColor = THEME.colors.levels.gold;
-    } else if (accuracy >= 80) {
+    } else if (accuracy >= 90) {
         grade = 'SUCCÈS';
         gradeColor = THEME.colors.success;
     }
@@ -51,23 +52,45 @@ const calculateStats = (accuracy: number, timeTaken: number, errors: number): Ga
 export default function GeoGameScreen() {
     const router = useRouter();
 
-    const { regionId, mode, level } = useLocalSearchParams<{
-        regionId: string; mode: string; level: string;
+    const { regionId, mode, level, batch } = useLocalSearchParams<{
+        regionId?: string; mode: string; level: string; batch?: string;
     }>();
 
     const currentMode = (mode || 'country') as GameMode;
-    const regionCode = regionId || 'EUR';
     const currentLevelId = parseInt(level || '1', 10);
 
+    const isTrainingMode = !!batch;
+    const regionCode = regionId || (isTrainingMode ? 'WLD' : 'EUR');
+
     const regionCountries = useMemo(() => {
+        if (batch) {
+            const batchCodes = batch.split(',');
+            return ALL_COUNTRIES.filter(c => batchCodes.includes(c.code));
+        }
+
         if (regionCode === 'WLD') return ALL_COUNTRIES;
         return ALL_COUNTRIES.filter(c => c.continentId === regionCode);
-    }, [regionCode]);
+    }, [regionCode, batch]);
 
     const [isResultModalVisible, setResultModalVisible] = useState(false);
     const [missionStats, setMissionStats] = useState<GameStats | null>(null);
 
     const saveLevelResult = useArenaStore(state => state.saveLevelResult);
+
+    // 💡 NOUVELLE FONCTION DE SORTIE PROPRE
+    const handleExit = () => {
+        setResultModalVisible(false);
+        setMissionStats(null); // Nettoyage des statistiques en mémoire
+
+        // On laisse 150ms à la modale pour amorcer sa fermeture avant de tuer l'écran
+        setTimeout(() => {
+            if (router.canGoBack()) {
+                router.back();
+            } else {
+                router.replace('/');
+            }
+        }, 150);
+    };
 
     const handleGameFinish = (stats: { timeTaken: number; accuracy: number; errors: number }) => {
         const finalStats = calculateStats(stats.accuracy, stats.timeTaken, stats.errors);
@@ -75,13 +98,15 @@ export default function GeoGameScreen() {
         setMissionStats(finalStats);
         setResultModalVisible(true);
 
-        saveLevelResult({
-            regionId: regionCode,
-            modeId: currentMode,
-            levelId: currentLevelId,
-            timeTaken: stats.timeTaken,
-            accuracy: stats.accuracy,
-        });
+        if (!isTrainingMode) {
+            saveLevelResult({
+                regionId: regionCode,
+                modeId: currentMode,
+                levelId: currentLevelId,
+                timeTaken: stats.timeTaken,
+                accuracy: stats.accuracy,
+            });
+        }
     };
 
     const gameEngine = useArcadeGame(regionCountries, currentLevelId, currentMode, handleGameFinish);
@@ -93,9 +118,19 @@ export default function GeoGameScreen() {
             case 2: return <GameLevel2View {...commonProps} />;
             case 3: return <GameLevel3View {...commonProps} />;
             case 4: return <GameLevel4View {...commonProps} />;
+            case 5: return <GameLevel5View {...commonProps} />;
             default: return null;
         }
     };
+
+    const liveAccuracy = useMemo(() => {
+        if (currentLevelId === 4) {
+            const totalAttempts = gameEngine.currentIndex + gameEngine.errors;
+            return totalAttempts === 0 ? 100 : Math.max(0, Math.round((gameEngine.currentIndex / totalAttempts) * 100));
+        } else {
+            return gameEngine.currentIndex === 0 ? 100 : Math.max(0, Math.round(((gameEngine.currentIndex - gameEngine.errors) / gameEngine.currentIndex) * 100));
+        }
+    }, [currentLevelId, gameEngine.currentIndex, gameEngine.errors]);
 
     return (
         <View style={styles.container}>
@@ -103,7 +138,7 @@ export default function GeoGameScreen() {
                 currentIndex={gameEngine.currentIndex}
                 total={gameEngine.total}
                 timeLeft={gameEngine.elapsedTime}
-                accuracy={gameEngine.currentIndex === 0 ? 100 : Math.max(0, ((gameEngine.currentIndex - gameEngine.errors) / gameEngine.currentIndex) * 100)}
+                accuracy={liveAccuracy}
                 title={GAME_CONFIG[currentMode]?.levels.find(l => l.id === currentLevelId)?.title || 'SIMULATION'}
             />
 
@@ -111,74 +146,69 @@ export default function GeoGameScreen() {
                 {gameEngine.status !== 'loading' && renderGameView()}
             </View>
 
-            {/* 💡 NOUVEAU RAPPORT DE MISSION VIA BASEBOTTOMSHEET */}
             <BaseBottomSheet
                 isVisible={isResultModalVisible}
-                onClose={() => router.back()}
-                title="RAPPORT"
+                onClose={handleExit} // 💡 Correction ici
+                title={isTrainingMode ? "RAPPORT D'ENTRAÎNEMENT" : "RAPPORT"}
             >
                 {missionStats && (
                     <View style={styles.resultContainer}>
-
-                        {/* 1. ICÔNE & GRADE */}
                         <View style={styles.gradeContainer}>
                             <View style={[styles.iconWrapper, { borderColor: missionStats.gradeColor + '40', backgroundColor: missionStats.gradeColor + '10' }]}>
                                 <Ionicons name="analytics" size={40} color={missionStats.gradeColor} />
                             </View>
-                            <CyberText variant="caps" colorType="secondary" style={{ letterSpacing: 2, marginBottom: 4, marginTop: 12 }}>
+                            <MyText variant="caps" colorType="secondary" style={{ letterSpacing: 2, marginBottom: 4, marginTop: 12 }}>
                                 ÉVALUATION
-                            </CyberText>
-                            <CyberText variant="h1" style={{ color: missionStats.gradeColor, fontSize: 32 }}>
+                            </MyText>
+                            <MyText variant="h1" style={{ color: missionStats.gradeColor, fontSize: 32 }}>
                                 {missionStats.grade}
-                            </CyberText>
+                            </MyText>
                         </View>
 
                         <View style={styles.divider} />
 
-                        {/* 2. STATISTIQUES DÉTAILLÉES */}
                         <View style={styles.statRow}>
                             <View style={styles.statLabel}>
                                 <Ionicons name="scan-circle" size={20} color={THEME.colors.text.secondary} />
-                                <CyberText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>PRÉCISION</CyberText>
+                                <MyText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>PRÉCISION</MyText>
                             </View>
-                            <CyberText variant="body" style={{ fontWeight: 'bold' }}>
+                            <MyText variant="h3" >
                                 {missionStats.accuracy}%
-                            </CyberText>
+                            </MyText>
                         </View>
 
                         <View style={styles.statRow}>
                             <View style={styles.statLabel}>
                                 <Ionicons name="timer" size={20} color={THEME.colors.text.secondary} />
-                                <CyberText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>
+                                <MyText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>
                                     TEMPS ÉCOULÉ
-                                </CyberText>
+                                </MyText>
                             </View>
-                            <CyberText variant="body" style={{ fontWeight: 'bold' }}>
+                            <MyText variant="h3" >
                                 {functions.formatTime(missionStats.timeTaken)}
-                            </CyberText>
+                            </MyText>
                         </View>
 
                         <View style={styles.statRow}>
                             <View style={styles.statLabel}>
                                 <Ionicons name="warning" size={20} color={THEME.colors.text.secondary} />
-                                <CyberText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>
+                                <MyText variant="bodySmall" colorType="secondary" style={{ letterSpacing: 1 }}>
                                     ERREURS
-                                </CyberText>
+                                </MyText>
                             </View>
-                            <CyberText variant="body" style={{ fontWeight: 'bold', color: missionStats.errors === 0 ? THEME.colors.success : THEME.colors.text.primary }}>
+                            <MyText variant="h3" style={{ color: missionStats.errors === 0 ? THEME.colors.success : THEME.colors.text.primary }}>
                                 {missionStats.errors}
-                            </CyberText>
+                            </MyText>
                         </View>
 
-                        {/* 3. BOUTON D'ACTION */}
                         <MyButton
                             title="TERMINER"
                             iconRight="chevron-forward"
-                            variant="outline"
-                            onPress={() => router.back()}
+                            iconLeft={missionStats.accuracy > 90 ? 'checkmark-circle' : 'close-circle'}
+                            variant={missionStats.accuracy > 90 ? 'outline' : 'danger'}
+                            onPress={handleExit} // 💡 Correction ici
                             style={{ width: '100%', marginTop: 24 }}
                         />
-
                     </View>
                 )}
             </BaseBottomSheet>
@@ -188,34 +218,11 @@ export default function GeoGameScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: THEME.colors.background },
-    gameViewWrapper: { flex: 1, paddingBottom: 60 },
-
-    // --- Styles Modal ---
+    gameViewWrapper: { flex: 1, paddingBottom: 20 },
     resultContainer: { width: '100%', paddingTop: 10 },
-
-    gradeContainer: {
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    iconWrapper: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-    },
-
-    statRow: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 14, paddingHorizontal: 16,
-        backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12,
-        borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
-        marginBottom: 8,
-    },
+    gradeContainer: { alignItems: 'center', paddingVertical: 10 },
+    iconWrapper: { width: 80, height: 80, borderRadius: THEME.metrics.radius.round, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+    statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: THEME.metrics.radius.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 8 },
     statLabel: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-
     divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 16 },
-
-
 });

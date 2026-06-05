@@ -1,15 +1,15 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
+import { useUserStore } from '@/store/useUserStore';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
-interface Props {
-    count: number;
-}
+export default function TicketBadge() {
+    const tickets = useUserStore(state => state.tickets);
+    const isPremium = useUserStore(state => state.isPremium);
 
-export default function TicketBadge({ count }: Props) {
-    // Une couleur différente (ex: bleu clair, blanc ou la couleur secondaire) pour contraster avec la flamme
-    const ticketColor = count > 0 ? THEME.colors.text.secondary : THEME.colors.danger;
+    // Si le joueur est premium, on affiche un badge spécial (ex: "∞" ou une icône différente)
+    const ticketColor = isPremium ? THEME.colors.primary : tickets > 0 ? THEME.colors.text.secondary : THEME.colors.danger;
 
     return (
         <View style={styles.container}>
@@ -17,9 +17,12 @@ export default function TicketBadge({ count }: Props) {
                 {/* L'icône ticket rappelle l'embarquement/voyage */}
                 <Ionicons name="ticket" size={16} color={ticketColor} />
             </View>
-            <CyberText variant="caps" style={{ color: ticketColor, fontSize: 16, marginTop: -3 }}>
-                {count}
-            </CyberText>
+            {isPremium ?
+                <Ionicons name="infinite" size={20} color={ticketColor} /> :
+                <MyText variant="caps" style={{ color: ticketColor, fontSize: 16, marginTop: -3 }}>
+                    {tickets}
+                </MyText>
+            }
         </View>
     );
 }
@@ -33,7 +36,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingLeft: 6,
         paddingRight: 12,
-        borderRadius: 20,
+        borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         shadowColor: '#000',
@@ -44,7 +47,7 @@ const styles = StyleSheet.create({
     iconWrapper: {
         width: 24,
         height: 24,
-        borderRadius: 12,
+        borderRadius: THEME.metrics.radius.sm,
         justifyContent: 'center',
         alignItems: 'center',
     }

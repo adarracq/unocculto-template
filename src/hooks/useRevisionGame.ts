@@ -1,7 +1,7 @@
 import { GameMode } from '@/constants/GameConfig';
 import type { Country } from '@/data/Countries';
 import { useLearningStore } from '@/store/useLearningStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface RevisionTask {
     target: Country;
@@ -10,27 +10,33 @@ export interface RevisionTask {
     level: 1 | 2 | 3;
 }
 
-export const useRevisionGame = (urgentCountries: Country[], allCountries: Country[], onFinish: () => void) => {
+export interface RevisionStats {
+    timeTaken: number;
+    accuracy: number;
+    errors: number;
+}
+
+export const useRevisionGame = (urgentCountries: Country[], allCountries: Country[], onFinish: (stats: RevisionStats) => void) => {
     const [queue, setQueue] = useState<RevisionTask[]>([]);
     const [status, setStatus] = useState<'playing' | 'success' | 'error'>('playing');
     const [mapFeedback, setMapFeedback] = useState<Record<string, 'correct' | 'wrong' | 'target'>>({});
     const [totalTasks, setTotalTasks] = useState(0);
 
+    const [errorsCount, setErrorsCount] = useState(0);
+    const [countryFails, setCountryFails] = useState<Record<string, boolean>>({});
+    const startTimeRef = useRef<number>(0);
+    const baseTasksCountRef = useRef<number>(0);
+
     const processAnswerInStore = useLearningStore(state => state.processAnswer);
+    const memoryMap = useLearningStore(state => state.memoryMap);
 
     useEffect(() => {
-        if (urgentCountries.length === 0) {
-            onFinish();
-            return;
-        }
+        if (urgentCountries.length === 0) return;
 
-        const tasks: RevisionTask[] = urgentCountries.map(target => {
-            const modes: GameMode[] = ['country', 'flag'];
-            if (target.capital) modes.push('capital');
-            const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        startTimeRef.current = Date.now();
+        const tasks: RevisionTask[] = [];
 
-            const randomLevel = Math.floor(Math.random() * 3) + 1 as 1 | 2 | 3;
-
+        urgentCountries.forEach(target => {
             const options = new Set<Country>();
             options.add(target);
             while (options.size < 4) {
@@ -39,22 +45,48 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
                     options.add(randomC);
                 }
             }
+            const optionsArray = Array.from(options).sort(() => Math.random() - 0.5);
 
-            return {
-                target,
-                options: Array.from(options).sort(() => Math.random() - 0.5),
-                mode: randomMode,
-                level: randomLevel
-            };
+            const box = memoryMap[target.code]?.box || 1;
+            const hasCapital = !!target.capital;
+
+            if (box === 1) {
+                // BOÎTE 1 : Reconnaissance (Drapeau + Capitale + Carte Pays)
+                tasks.push({ target, options: optionsArray, mode: 'flag', level: 1 });
+                if (hasCapital) tasks.push({ target, options: optionsArray, mode: 'capital', level: 1 });
+                tasks.push({ target, options: optionsArray, mode: 'country', level: 2 });
+
+            } else if (box === 2) {
+                // BOÎTE 2 : Géographie (Carte Pays + Carte Capitale)
+                tasks.push({ target, options: optionsArray, mode: 'country', level: 2 });
+                if (hasCapital) tasks.push({ target, options: optionsArray, mode: 'capital', level: 2 });
+
+            } else if (box === 3) {
+                // BOÎTE 3 : Mixte (Saisie Pays + Visuel Capitale)
+                if (hasCapital) {
+                    const randomCapitalLevel = Math.random() > 0.5 ? 1 : 2; // QCM ou Carte
+                    tasks.push({ target, options: optionsArray, mode: 'capital', level: randomCapitalLevel });
+                }
+                tasks.push({ target, options: optionsArray, mode: 'country', level: 3 });
+
+            } else if (box === 4) {
+                // BOÎTE 4 : Expert (Saisie Pays + Saisie Capitale)
+                tasks.push({ target, options: optionsArray, mode: 'country', level: 3 });
+                if (hasCapital) tasks.push({ target, options: optionsArray, mode: 'capital', level: 3 });
+            }
         });
 
-        const shuffledTasks = tasks.sort(() => Math.random() - 0.5);
-        const groupedTasks = shuffledTasks.sort((a, b) => a.level - b.level);
+        // 💡 LE TRI RESTE STRICTEMENT PAR NIVEAU (Tous les QCM, puis toutes les Cartes, puis tous les Claviers)
+        tasks.sort((a, b) => {
+            if (a.level !== b.level) return a.level - b.level;
+            return Math.random() - 0.5;
+        });
 
-        setQueue(groupedTasks);
-        setTotalTasks(groupedTasks.length);
+        setQueue(tasks);
+        setTotalTasks(tasks.length);
+        baseTasksCountRef.current = tasks.length;
         setStatus('playing');
-    }, [urgentCountries]);
+    }, [urgentCountries, allCountries]);
 
     const currentTask = queue[0];
 
@@ -62,13 +94,14 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
         if (status !== 'playing' || !currentTask) return;
 
         const isCorrect = answerCode === currentTask.target.code;
-        processAnswerInStore(currentTask.target.code, isCorrect);
 
         if (isCorrect) {
             setStatus('success');
             setMapFeedback({ [currentTask.target.code]: 'correct' });
         } else {
             setStatus('error');
+            setErrorsCount(e => e + 1);
+            setCountryFails(prev => ({ ...prev, [currentTask.target.code]: true }));
             setMapFeedback({
                 [answerCode]: 'wrong',
                 [currentTask.target.code]: 'correct'
@@ -76,7 +109,6 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
         }
     };
 
-    // 💡 NOUVELLE FONCTION : Passage manuel à la question suivante
     const nextTask = () => {
         if (status === 'playing') return;
 
@@ -84,9 +116,7 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
         const remaining = [...queue.slice(1)];
 
         if (status === 'error') {
-            // En cas d'erreur, on réinsère la question à la fin de son bloc de niveau
             const nextLevelIndex = remaining.findIndex(t => t.level > current.level);
-
             if (nextLevelIndex === -1) {
                 remaining.push(current);
             } else {
@@ -96,7 +126,15 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
         }
 
         if (remaining.length === 0) {
-            onFinish();
+            urgentCountries.forEach(c => {
+                const hasFailed = countryFails[c.code] || false;
+                processAnswerInStore(c.code, !hasFailed);
+            });
+
+            const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
+            const accuracy = Math.max(0, Math.round(((baseTasksCountRef.current - errorsCount) / baseTasksCountRef.current) * 100));
+
+            onFinish({ timeTaken, accuracy, errors: errorsCount });
         } else {
             setQueue(remaining);
             setStatus('playing');
@@ -104,13 +142,5 @@ export const useRevisionGame = (urgentCountries: Country[], allCountries: Countr
         }
     };
 
-    return {
-        currentTask,
-        queueLength: queue.length,
-        totalTasks,
-        status,
-        mapFeedback,
-        validateAnswer,
-        nextTask // 💡 Exposée pour l'UI
-    };
+    return { currentTask, queueLength: queue.length, totalTasks, status, mapFeedback, validateAnswer, nextTask };
 };

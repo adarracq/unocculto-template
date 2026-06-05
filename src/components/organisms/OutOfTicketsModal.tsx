@@ -1,11 +1,16 @@
-import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
+import { MyText } from '@/components/atoms/MyText';
 import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet';
 import { useUserStore } from '@/store/useUserStore';
 import { THEME } from '@/theme/theme';
+import { billingService } from '@/utils/billingService';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { TestIds, useRewardedAd } from 'react-native-google-mobile-ads';
+import { PurchasesPackage } from 'react-native-purchases';
+
+const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-xxxxxxxxxxx/yyyyyyyyyy';
 
 interface Props {
     visible: boolean;
@@ -15,33 +20,71 @@ interface Props {
 
 export default function OutOfTicketsModal({ visible, onClose, onSuccess }: Props) {
     const [isWatchingAd, setIsWatchingAd] = useState(false);
+    const [rewardGiven, setRewardGiven] = useState(false);
+
+    const [offer, setOffer] = useState<PurchasesPackage | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isLoadingOffers, setIsLoadingOffers] = useState(true);
 
     const addTicket = useUserStore(state => state.addTicket);
-    const unlockPremium = useUserStore(state => state.unlockPremium);
 
-    const handleWatchAd = async () => {
-        setIsWatchingAd(true);
-        try {
-            // 💡 ICI : Logique d'appel SDK Publicité (ex: AdMob Rewarded)
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Simulation pub
+    const { isLoaded, isClosed, load, show, isEarnedReward, error } = useRewardedAd(adUnitId);
 
-            addTicket(1); // On donne 1 billet
-            onSuccess();  // On lance le jeu
-        } catch (error) {
-            console.log("Erreur pub", error);
-        } finally {
-            setIsWatchingAd(false);
+    useEffect(() => {
+        if (visible) {
+            setRewardGiven(false);
         }
+    }, [visible]);
+
+    // 1. Précharger la pub dès que la modale s'ouvre (ou quand la précédente est fermée)
+    useEffect(() => {
+        if (visible && (!isLoaded || isClosed) && !error) {
+            load();
+        }
+    }, [visible, isLoaded, isClosed, error, load]);
+
+    // 2. Écouter si l'utilisateur a gagné la récompense (a regardé jusqu'au bout)
+    useEffect(() => {
+        if (isEarnedReward && !rewardGiven) {
+            setRewardGiven(true); // 🔒 On verrouille immédiatement !
+            addTicket(1);
+            onSuccess();
+        }
+    }, [isEarnedReward, rewardGiven]);
+
+    useEffect(() => {
+        if (!visible) return;
+
+        const fetchOffer = async () => {
+            setIsLoadingOffers(true);
+            const packageOffer = await billingService.getLifetimeOffer();
+            setOffer(packageOffer);
+            setIsLoadingOffers(false);
+        };
+        fetchOffer();
+    }, [visible]);
+
+    const handlePurchasePremium = async () => {
+        if (!offer) return;
+        setIsProcessing(true);
+
+        const success = await billingService.purchase(offer);
+        if (success) onSuccess();
+
+        setIsProcessing(false);
     };
 
-    const handlePurchasePremium = () => {
-        // 💡 ICI : Logique d'achat in-app (ex: RevenueCat)
-        // Si achat réussi :
-        unlockPremium();
-        onSuccess();
+    const handleRestore = async () => {
+        setIsProcessing(true);
+
+        const success = await billingService.restore();
+        if (success) onSuccess();
+
+        setIsProcessing(false);
     };
 
     const goldColor = THEME.colors.levels?.gold || '#FFD700';
+    const isUIBlocked = isProcessing || isWatchingAd;
 
     return (
         <BaseBottomSheet
@@ -53,62 +96,81 @@ export default function OutOfTicketsModal({ visible, onClose, onSuccess }: Props
 
                 {/* 1. ICÔNE & MESSAGE PRINCIPAL */}
                 <View style={styles.iconWrapper}>
-                    <Ionicons name="lock-closed" size={40} color={goldColor} />
+                    <Ionicons name="infinite" size={40} color={goldColor} />
+
                 </View>
 
-                <CyberText variant="body" align="center" style={{ marginBottom: 24, lineHeight: 24, color: THEME.colors.text.secondary }}>
-                    Vous avez épuisé vos 3 billets quotidiens.{'\n'} Passez à la version <CyberText variant="body" style={{ color: goldColor, fontWeight: 'bold' }}>UNOCCULTO PREMIUM</CyberText> pour une exploration sans aucune limite.
-                </CyberText>
+                <MyText variant="body" align="center" style={{ marginBottom: 24, lineHeight: 24, color: THEME.colors.text.secondary }}>
+                    Vous avez épuisé vos billets quotidiens.{'\n'}
+                    Acquérez <MyText variant="body" style={{ color: goldColor }}>UNOCCULTO PREMIUM</MyText> pour une exploration sans limite.
+                </MyText>
 
-                {/* 2. BOÎTE DES AVANTAGES PREMIUM */}
+                {/* 2. BOÎTE DES AVANTAGES */}
                 <View style={[styles.benefitsBox, { borderColor: goldColor + '40' }]}>
-                    <BenefitItem icon="infinite" text="Parties illimitées à vie" color={goldColor} />
-                    <BenefitItem icon="earth" text="Déblocage de tous les modes" color={goldColor} />
-                    <BenefitItem icon="shield-checkmark" text="Zéro publicité, 100% immersion" color={goldColor} />
+                    <BenefitItem icon="card-outline" text="Paiement unique, sans abonnement" color={goldColor} />
+                    <BenefitItem icon="game-controller-outline" text="Parties et explorations illimitées" color={goldColor} />
+                    <BenefitItem icon="shield-checkmark-outline" text="Expérience 100% sans publicité" color={goldColor} />
                 </View>
 
-                {/* 3. BOUTON D'ACHAT PRINCIPAL */}
+                {/* 3. BOUTON D'ACHAT DYNAMIQUE */}
                 <MyButton
-                    title="UNOCCULTO PREMIUM (4,99€)"
-                    iconLeft="checkmark-circle"
+                    title={isLoadingOffers ? "CHARGEMENT..." : isProcessing ? "TRAITEMENT..." : `UNOCCULTO PREMIUM (${offer?.product.priceString || '...'})`}
+                    subtitle="Achat définitif"
+                    iconLeft={isProcessing || isLoadingOffers ? undefined : "key"}
                     variant="outline"
                     onPress={handlePurchasePremium}
-                    style={{ width: '100%', marginBottom: 20 }}
+                    disabled={isUIBlocked || isLoadingOffers || !offer}
+                    style={{ width: '100%', marginBottom: 12 }}
                 />
 
                 {/* 4. SÉPARATEUR "OU" */}
                 <View style={styles.dividerContainer}>
                     <View style={styles.dividerLine} />
-                    <CyberText variant="caps" style={{ color: THEME.colors.text.disabled, fontSize: 10, letterSpacing: 2 }}>OU</CyberText>
+                    <MyText variant="caps" style={{ color: THEME.colors.text.disabled, fontSize: 10, letterSpacing: 2 }}>OU</MyText>
                     <View style={styles.dividerLine} />
                 </View>
 
                 {/* 5. OPTION DE SECOURS (PUB) */}
                 <View style={styles.freeOptionContainer}>
-                    {isWatchingAd ? (
-                        <View style={styles.loadingBox}>
-                            <ActivityIndicator color={THEME.colors.primary} />
-                            <CyberText variant="bodySmall" colorType="secondary">Transmission en cours...</CyberText>
-                        </View>
-                    ) : (
+                    {error ? (
+                        // CAS 1 : ERREUR DE CHARGEMENT
+                        <MyButton
+                            title="Réseau surchargé"
+                            subtitle="Réessayer de charger une vidéo"
+                            iconLeft="refresh"
+                            variant="danger"
+                            onPress={() => load()} // Permet à l'utilisateur de forcer une nouvelle requête
+                            disabled={isUIBlocked}
+                        />
+                    ) :
                         <MyButton
                             title="Regarder une vidéo"
-                            iconLeft="play-circle"
-                            onPress={handleWatchAd}
+                            subtitle={isLoaded ? "Obtenir 1 billet d'exploration" : "Chargement de la publicité..."}
+                            iconLeft="play-circle-outline"
+                            onPress={() => show()} // 💡 Lance la publicité préchargée
+                            disabled={isUIBlocked || !isLoaded}
                         />
-                    )}
+                    }
                 </View>
+                {/* RESTAURATION */}
+                <TouchableOpacity onPress={handleRestore} disabled={isUIBlocked} style={styles.restoreButton}>
+                    <MyText variant="bodySmall" style={{ color: THEME.colors.text.secondary, textDecorationLine: 'underline' }}>
+                        Déjà Premium ? Restaurer mon achat
+                    </MyText>
+                </TouchableOpacity>
 
             </View>
         </BaseBottomSheet>
     );
 }
 
-// Sous-composant pour lister les avantages proprement
+// Sous-composant
 const BenefitItem = ({ icon, text, color }: { icon: any, text: string, color: string }) => (
     <View style={styles.benefitRow}>
-        <Ionicons name={icon} size={20} color={color} />
-        <CyberText variant="body" style={{ fontSize: 14, color: THEME.colors.text.primary }}>{text}</CyberText>
+        <View style={styles.iconContainer}>
+            <Ionicons name={icon as any} size={18} color={color} />
+        </View>
+        <MyText variant="body" style={{ fontSize: 14, color: THEME.colors.text.primary, flex: 1 }}>{text}</MyText>
     </View>
 );
 
@@ -117,25 +179,36 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         paddingTop: 10,
+        paddingBottom: 10,
     },
     iconWrapper: {
         width: 80,
         height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(255, 215, 0, 0.05)', // Fond doré très léger
+        borderRadius: THEME.metrics.radius.round,
+        backgroundColor: 'rgba(255, 215, 0, 0.05)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: 'rgba(255, 215, 0, 0.2)',
+        position: 'relative',
+    },
+    lifetimeBadge: {
+        position: 'absolute',
+        bottom: -8,
+        backgroundColor: THEME.colors.levels?.gold || '#FFD700',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: THEME.metrics.radius.sm,
+        borderWidth: 2,
+        borderColor: THEME.colors.background,
     },
     benefitsBox: {
         width: '100%',
         backgroundColor: THEME.colors.glass.background,
         padding: 20,
-        borderRadius: 16,
+        borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
-        borderColor: THEME.colors.glass.border,
         gap: 16,
         marginBottom: 24,
     },
@@ -143,6 +216,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12
+    },
+    iconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: THEME.metrics.radius.md,
+        backgroundColor: 'rgba(255, 215, 0, 0.08)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    restoreButton: {
+        marginTop: 20,
+        paddingVertical: 8,
     },
     dividerContainer: {
         flexDirection: 'row',
@@ -154,20 +239,22 @@ const styles = StyleSheet.create({
     dividerLine: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+        backgroundColor: 'rgba(255,255,255,0.08)',
     },
     freeOptionContainer: {
         width: '100%',
         alignItems: 'center'
     },
     loadingBox: {
-        height: 56,
+        height: 64,
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
         backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 12
+        borderRadius: THEME.metrics.radius.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
     },
 });

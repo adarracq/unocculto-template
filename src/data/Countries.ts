@@ -10,11 +10,11 @@ export const ZONES = [
 export const MICRO_STATES = ['AD', 'MC', 'LI', 'MT', 'SM', 'VA', 'SG', 'BH', 'KM', 'LC', 'VC', 'GD', 'BB', 'AG', 'KN', 'DM'];
 export const MICRO_ISLANDS_STATES = ['CV', 'ST', 'SC', 'MV', 'KI', 'NR', 'TV', 'MH', 'PW', 'FM'];
 export const REGION_CAMERAS: Record<string, { center: [number, number]; zoom: number }> = {
-    AFR: { center: [20, 0], zoom: 2.5 },      // Afrique
-    EUR: { center: [15, 50], zoom: 3 },       // Europe
-    ASI: { center: [100, 30], zoom: 2 },      // Asie
-    AME: { center: [-75, 0], zoom: 2 },       // Amériques (Vue large)
-    OCE: { center: [160, -25], zoom: 1 },   // Océanie
+    AFR: { center: [20, 0], zoom: 1.7 },      // Afrique
+    EUR: { center: [15, 50], zoom: 1.6 },       // Europe
+    ASI: { center: [85, 30], zoom: 1 },      // Asie
+    AME: { center: [-95, 20], zoom: .7 },       // Amériques (Vue large)
+    OCE: { center: [165, -25], zoom: 1.3 },   // Océanie
     WLD: { center: [0, 20], zoom: 1 }         // Monde
 };
 

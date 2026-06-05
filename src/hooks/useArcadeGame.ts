@@ -1,6 +1,6 @@
-// src/hooks/useArcadeGame.ts
 import { GameMode } from '@/constants/GameConfig';
 import { Country } from '@/data/Countries';
+import { feedbackService } from '@/utils/feedbackService';
 import { useEffect, useRef, useState } from 'react';
 
 export interface Question {
@@ -34,8 +34,8 @@ export const useArcadeGame = (
             const options = new Set<Country>();
             options.add(target);
 
-            // On ajoute des leurres uniques
-            while (options.size < 4) {
+            // On ajoute des leurres uniques (sécurité infinie corrigée)
+            while (options.size < 4 && options.size < regionCountries.length) {
                 const randomC = regionCountries[Math.floor(Math.random() * regionCountries.length)];
                 if (randomC.code !== target.code) options.add(randomC);
             }
@@ -65,30 +65,50 @@ export const useArcadeGame = (
     const validateAnswer = (answerCountryCode: string) => {
         if (status !== 'playing' || !currentQuestion) return;
 
-        const isCorrect = answerCountryCode === currentQuestion.target.code;
+        const isSandbox = level === 4;
+
+        // 💡 En mode Sandbox, la vue visuelle a déjà fait la vérification et renvoie 'WRONG_CODE' si faux
+        const isCorrect = isSandbox
+            ? answerCountryCode !== 'WRONG_CODE'
+            : answerCountryCode === currentQuestion.target.code;
 
         if (isCorrect) {
             setStatus('success');
-            // functions.vibrate('small-success');
-            setMapFeedback({ [currentQuestion.target.code]: 'correct' });
-            setTimeout(nextStep, 1000);
+            feedbackService.success();
+
+            if (!isSandbox) {
+                setMapFeedback({ [currentQuestion.target.code]: 'correct' });
+            }
+
+            // 💡 Le mode Sandbox avance instantanément pour permettre le "Speed Typing"
+            setTimeout(() => nextStep(false), isSandbox ? 50 : 1000);
         } else {
             setStatus('error');
+            feedbackService.error();
             setErrors(e => e + 1);
-            // functions.vibrate('small-error');
 
-            setMapFeedback({
-                [answerCountryCode]: 'wrong',
-                [currentQuestion.target.code]: 'correct'
-            });
+            if (!isSandbox) {
+                setMapFeedback({
+                    [answerCountryCode]: 'wrong',
+                    [currentQuestion.target.code]: 'correct'
+                });
+            }
 
             setTimeout(() => {
-                nextStep();
-            }, 1500);
+                // 💡 En mode Sandbox, une erreur ne fait PAS avancer le jeu, on doit toujours trouver le même nombre total
+                nextStep(isSandbox);
+            }, isSandbox ? 1000 : 1500);
         }
     };
 
-    const nextStep = () => {
+    const nextStep = (skipAdvance = false) => {
+        // Si on skip (Erreur en mode Sandbox), on remet juste le jeu en "playing"
+        if (skipAdvance) {
+            setStatus('playing');
+            setMapFeedback({});
+            return;
+        }
+
         if (currentIndex < queue.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setStatus('playing');
@@ -101,7 +121,9 @@ export const useArcadeGame = (
     const finishGame = () => {
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current as number);
         const finalTime = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
-        const accuracy = Math.round(((queue.length - errors) / queue.length) * 100);
+
+        // Sécurité pour ne pas avoir un score négatif si trop d'erreurs
+        const accuracy = Math.max(0, Math.round(((queue.length - errors) / queue.length) * 100));
 
         setStatus('finished');
         onGameFinish({ timeTaken: finalTime, accuracy, errors });

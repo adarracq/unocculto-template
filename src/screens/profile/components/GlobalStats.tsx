@@ -1,4 +1,4 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
 import { StyleSheet, View } from 'react-native';
 
@@ -14,36 +14,36 @@ export default function GlobalStats({ visited, total, mastered, urgent }: Props)
         <View style={styles.container}>
             {/* BLOC 1 : EXPLORÉS */}
             <View style={styles.statBox}>
-                <CyberText variant="h1" style={{ fontSize: 20 }}>
+                <MyText variant="h1" style={{ fontSize: 20 }}>
                     {visited}/{total}
-                </CyberText>
-                <CyberText variant="caps" style={styles.label}>
+                </MyText>
+                <MyText variant="caps" style={styles.label}>
                     PAYS DÉCOUVERTS
-                </CyberText>
+                </MyText>
             </View>
 
             <View style={styles.verticalDivider} />
 
             {/* BLOC 2 : MAÎTRISÉS */}
             <View style={styles.statBox}>
-                <CyberText variant="h1" style={{ fontSize: 20, color: THEME.colors.success }}>
+                <MyText variant="h1" style={{ fontSize: 20, color: THEME.colors.success }}>
                     {mastered}/{total}
-                </CyberText>
-                <CyberText variant="caps" style={[styles.label, { color: THEME.colors.success }]}>
+                </MyText>
+                <MyText variant="caps" style={[styles.label, { color: THEME.colors.success }]}>
                     100% MAÎTRISÉS
-                </CyberText>
+                </MyText>
             </View>
 
             <View style={styles.verticalDivider} />
 
             {/* BLOC 3 : RÉVISIONS */}
             <View style={styles.statBox}>
-                <CyberText variant="h1" style={{ fontSize: 20, color: urgent > 0 ? THEME.colors.danger : THEME.colors.text.primary }}>
+                <MyText variant="h1" style={{ fontSize: 20, color: urgent > 0 ? THEME.colors.danger : THEME.colors.text.primary }}>
                     {urgent}
-                </CyberText>
-                <CyberText variant="caps" style={[styles.label, urgent > 0 && { color: THEME.colors.danger }]}>
+                </MyText>
+                <MyText variant="caps" style={[styles.label, urgent > 0 && { color: THEME.colors.danger }]}>
                     À RÉVISER
-                </CyberText>
+                </MyText>
             </View>
         </View>
     );
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         backgroundColor: THEME.colors.glass.background,
-        borderRadius: 16,
+        borderRadius: THEME.metrics.radius.md,
         paddingVertical: 16,
         borderWidth: 1,
         borderColor: THEME.colors.glass.border,

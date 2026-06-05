@@ -1,14 +1,17 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import InteractiveMap from '@/components/organisms/InteractiveMap';
-import { MICRO_STATES } from '@/data/Countries'; // Ajustez l'import selon votre fichier
+import { MICRO_STATES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GameViewProps } from '../GeoGameScreen';
 import ArcadeControls from './ArcadeControls';
 
+interface Props extends GameViewProps {
+    hasFloatingButton?: boolean;
+}
 
-export default function GameLevel1View({ engine, mode }: GameViewProps) {
+export default function GameLevel1View({ engine, mode, hasFloatingButton = false }: Props) {
 
     const { currentQuestion, validateAnswer, mapFeedback, status } = engine;
     const target = currentQuestion.target;
@@ -28,10 +31,8 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
     const getMapColors = () => {
         const colors: Record<string, string> = {};
 
-        // 1. Highlight de la cible (Bleu/Or selon le thème)
         colors[target.code] = THEME.colors.primary;
 
-        // 2. Écrase avec le Feedback (Vert/Rouge) après le clic
         Object.keys(mapFeedback).forEach(code => {
             if (mapFeedback[code] === 'correct') colors[code] = THEME.colors.success;
             if (mapFeedback[code] === 'wrong') colors[code] = THEME.colors.danger;
@@ -44,24 +45,21 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
         return mode === 'capital' ? "IDENTIFIEZ LA CAPITALE" : "IDENTIFIEZ CE TERRITOIRE";
     };
 
-
-
+    // CREATION D'UNE CLÉ UNIQUE POUR LA QUESTION ACTUELLE
+    const questionKey = `${target.code}-${mode}-${currentQuestion.options[0]?.code}`;
 
     return (
         <View style={styles.container}>
 
-            {/* 1. ZONE VISUELLE (CARTE) */}
             <View style={styles.visualArea}>
-                {/* HUD Overlay - Instruction */}
                 <View style={styles.overlay}>
                     <View style={styles.instructionBadge}>
-                        <CyberText variant="caps" style={{ color: THEME.colors.background, letterSpacing: 1 }}>
+                        <MyText variant="caps" style={{ color: THEME.colors.background, letterSpacing: 1 }}>
                             {getInstructionText()}
-                        </CyberText>
+                        </MyText>
                     </View>
                 </View>
 
-                {/* La Carte avec MapLibre */}
                 <InteractiveMap
                     countryColors={getMapColors()}
                     focusCoordinates={cameraTarget}
@@ -69,9 +67,12 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
                 />
             </View>
 
-            {/* 2. ZONE DE CONTRÔLE (BOUTONS QCM) */}
-            <View style={styles.bottomArea}>
+            <View style={[
+                styles.bottomArea,
+                { paddingBottom: (status === 'error' && hasFloatingButton) ? 120 : 30 }
+            ]}>
                 <ArcadeControls
+                    key={questionKey}
                     mode={mode}
                     options={currentQuestion.options}
                     targetCode={target.code}
@@ -87,14 +88,12 @@ export default function GameLevel1View({ engine, mode }: GameViewProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // On détache la vue pour qu'elle s'étende proprement
         position: 'relative',
     },
     visualArea: {
         flex: 1,
         position: 'relative',
         justifyContent: 'center',
-        // Léger arrondi et bordure pour encapsuler la carte (optionnel)
         borderRadius: THEME.metrics.radius.lg,
         overflow: 'hidden',
         borderWidth: 1,
@@ -124,8 +123,8 @@ const styles = StyleSheet.create({
         minHeight: 180,
         justifyContent: 'center',
         paddingHorizontal: THEME.metrics.spacing.lg,
-        paddingVertical: 30,
-        // Suppression du fond semi-transparent pour garder l'aspect OLED propre, 
-        // les boutons se détacheront naturellement sur le noir.
+        // Le paddingVertical original a été séparé : le paddingTop reste fixe, 
+        // tandis que le paddingBottom est géré dynamiquement plus haut.
+        paddingTop: 30,
     },
 });

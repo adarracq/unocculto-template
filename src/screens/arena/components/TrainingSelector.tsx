@@ -1,6 +1,7 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { feedbackService } from '@/utils/feedbackService';
+import { ChevronRight, Crosshair, Flag, Globe, Lock, MapPin, Waves } from 'lucide-react-native';
 import { useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
@@ -11,45 +12,45 @@ interface SelectorProps {
 export default function TrainingSelector({ onSelect }: SelectorProps) {
     return (
         <View style={styles.container}>
-            <CyberText variant="caps" colorType="secondary" style={styles.title}>
+            <MyText variant="caps" colorType="secondary" style={styles.title}>
                 CENTRE D'ENTRAÎNEMENT
-            </CyberText>
+            </MyText>
 
             <View style={styles.grid}>
                 <TrainingCard
                     title="PAYS"
                     subtitle="Localisation"
-                    icon="globe-outline"
-                    color="#4A90E2" // Bleu
+                    Icon={Globe}
+                    themeColor={THEME.colors.modes.country}
                     onPress={() => onSelect('country')}
                 />
                 <TrainingCard
                     title="DRAPEAUX"
                     subtitle="Identification"
-                    icon="flag-outline"
-                    color="#E24A4A" // Rouge
+                    Icon={Flag}
+                    themeColor={THEME.colors.modes.flag}
                     onPress={() => onSelect('flag')}
                 />
                 <TrainingCard
                     title="CAPITALES"
                     subtitle="Connaissances"
-                    icon="trail-sign-outline"
-                    color="#4AE290" // Vert
+                    Icon={MapPin}
+                    themeColor={THEME.colors.modes.capital}
                     onPress={() => onSelect('capital')}
                 />
                 <TrainingCard
                     title="VILLES"
                     subtitle="Placer"
-                    icon="locate"
-                    color="#E2904A" // Orange
+                    Icon={Crosshair}
+                    themeColor={THEME.colors.levels.bronze} // Orange
                     onPress={() => { }}
                     isLocked={true}
                 />
                 <TrainingCard
                     title="EAUX"
                     subtitle="Retrouver"
-                    icon="water-outline"
-                    color="#4AE2E2" // Cyan
+                    Icon={Waves}
+                    themeColor={THEME.colors.inProgress} // Bleu ciel
                     onPress={() => { }}
                     isLocked={true}
                 />
@@ -58,14 +59,16 @@ export default function TrainingSelector({ onSelect }: SelectorProps) {
     );
 }
 
-const TrainingCard = ({ title, subtitle, icon, color, onPress, isLocked }: any) => {
+const TrainingCard = ({ title, subtitle, Icon, themeColor, onPress, isLocked }: any) => {
     const scaleValue = useRef(new Animated.Value(1)).current;
-    if (isLocked) {
-        onPress = () => { };
-        color = THEME.colors.text.disabled;
-    }
+
+    // 💡 Couleur dynamique : Gris si verrouillé, Couleur du mode si actif
+    const activeColor = isLocked ? THEME.colors.text.disabled : themeColor;
 
     const handlePressIn = () => {
+        if (!isLocked) feedbackService.medium();
+        else feedbackService.error();
+
         Animated.spring(scaleValue, { toValue: 0.96, useNativeDriver: true, speed: 20 }).start();
     };
 
@@ -73,40 +76,71 @@ const TrainingCard = ({ title, subtitle, icon, color, onPress, isLocked }: any) 
         Animated.spring(scaleValue, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
     };
 
+    const handlePress = () => {
+        if (!isLocked && onPress) onPress();
+    };
+
     return (
         <Animated.View style={{ transform: [{ scale: scaleValue }], width: '100%' }}>
             <Pressable
-                style={[styles.card, isLocked && { opacity: 0.5 }]}
-                onPress={onPress}
+                style={[styles.card, isLocked && { opacity: 0.6 }]} // Légèrement moins transparent pour lire "Verrouillé"
+                onPress={handlePress}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
             >
-                {/* Fond type Glass */}
-                <View style={[styles.glassBg, { borderColor: color + '40' }]} />
+                {/* 1. Fond type Glass neutre (On garde l'élégance monochrome ici) */}
+                <View style={styles.glassBg} />
 
-                <View style={[styles.iconBox, { backgroundColor: color + '20' }]}>
-                    <Ionicons name={icon} size={20} color={color} />
+                {/* 2. Bloc Icône coloré façon HUD */}
+                <View style={[
+                    styles.iconBox,
+                    {
+                        backgroundColor: isLocked ? 'transparent' : `${themeColor}15`,
+                        borderColor: isLocked ? 'transparent' : `${themeColor}30`
+                    }
+                ]}>
+                    <Icon size={20} color={activeColor} strokeWidth={2} />
                 </View>
 
+                {/* 3. Textes */}
                 <View style={styles.textGroup}>
-                    <CyberText variant="h3">{title}</CyberText>
-                    <CyberText variant="bodySmall" colorType="secondary">{subtitle}</CyberText>
+                    <MyText
+                        variant="h3"
+                        style={{ color: isLocked ? THEME.colors.text.disabled : THEME.colors.text.primary, letterSpacing: 0.5 }}
+                    >
+                        {title}
+                    </MyText>
+                    <MyText variant="bodySmall" colorType="secondary">
+                        {subtitle}
+                    </MyText>
                 </View>
 
-                <Ionicons name={isLocked ? "lock-closed" : "chevron-forward"} size={16} color={color} />
+                {/* 4. Icône d'action */}
+                {isLocked ? (
+                    <Lock size={18} color={THEME.colors.text.disabled} strokeWidth={2} />
+                ) : (
+                    <ChevronRight size={20} color={THEME.colors.text.primary} strokeWidth={2} style={{ opacity: 0.8 }} />
+                )}
             </Pressable>
         </Animated.View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { marginBottom: THEME.metrics.spacing.xl },
-    title: { marginBottom: THEME.metrics.spacing.md, marginLeft: 4 },
-    grid: { gap: 12 },
+    container: {
+    },
+    title: {
+        marginBottom: THEME.metrics.spacing.md,
+        marginLeft: THEME.metrics.spacing.sm,
+        letterSpacing: 1,
+    },
+    grid: {
+        gap: THEME.metrics.spacing.sm
+    },
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: 70,
+        height: 74,
         paddingHorizontal: THEME.metrics.spacing.md,
         borderRadius: THEME.metrics.radius.md,
         overflow: 'hidden',
@@ -115,15 +149,21 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFill,
         backgroundColor: THEME.colors.glass.background,
         borderWidth: 1,
+        borderColor: THEME.colors.glass.border,
         borderRadius: THEME.metrics.radius.md,
     },
     iconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 44,
+        height: 44,
+        borderRadius: THEME.metrics.radius.sm,
+        borderWidth: 1,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: THEME.metrics.spacing.md,
     },
-    textGroup: { flex: 1, gap: 2 }
+    textGroup: {
+        flex: 1,
+        justifyContent: 'center',
+        gap: 2
+    }
 });

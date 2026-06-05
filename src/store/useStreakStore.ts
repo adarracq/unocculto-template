@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+// 💡 1. Import du store utilisateur
+import { useUserStore } from './useUserStore';
 
 export type StreakStatus = 'INCREASED' | 'LOST' | 'ALREADY_LOGGED' | null;
 
@@ -9,12 +11,9 @@ interface StreakState {
     previousStreak: number;
     lastActiveDate: number | null;
 
-    // États pour l'UI (Modale)
     status: StreakStatus;
     isModalVisible: boolean;
 
-
-    // Actions
     checkAndIncrementStreak: () => void;
     closeModal: () => void;
     restoreStreak: () => void;
@@ -30,7 +29,6 @@ export const useStreakStore = create<StreakState>()(
             status: null,
             isModalVisible: false,
 
-
             checkAndIncrementStreak: () => {
                 const state = get();
                 const now = new Date();
@@ -38,6 +36,8 @@ export const useStreakStore = create<StreakState>()(
                 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
                 if (!state.lastActiveDate) {
+                    // Nouveau jour (Première connexion)
+                    useUserStore.getState().refillTicketsDaily(); // 💡 2. On recharge les tickets
                     set({ streakCount: 1, lastActiveDate: todayMidnight, status: 'INCREASED', isModalVisible: true });
                     return;
                 }
@@ -45,14 +45,16 @@ export const useStreakStore = create<StreakState>()(
                 const diff = todayMidnight - state.lastActiveDate;
 
                 if (diff === 0) {
-                    // Déjà connecté aujourd'hui, on ne montre pas la modale
+                    // Déjà connecté aujourd'hui, on ne fait RIEN pour les tickets
                     set({ status: 'ALREADY_LOGGED', isModalVisible: false });
                     return;
                 } else if (diff === ONE_DAY_MS) {
-                    // Connexion le lendemain parfait : +1
+                    // Nouveau jour (Série maintenue)
+                    useUserStore.getState().refillTicketsDaily(); // 💡 2. On recharge les tickets
                     set({ streakCount: state.streakCount + 1, lastActiveDate: todayMidnight, status: 'INCREASED', isModalVisible: true });
                 } else if (diff > ONE_DAY_MS) {
-                    // Série brisée
+                    // Nouveau jour (Série brisée)
+                    useUserStore.getState().refillTicketsDaily(); // 💡 2. On recharge les tickets
                     set({
                         previousStreak: state.streakCount,
                         streakCount: 1,
@@ -68,7 +70,6 @@ export const useStreakStore = create<StreakState>()(
             restoreStreak: () => {
                 const state = get();
                 if (state.status === 'LOST') {
-                    // On restaure l'ancienne série et on ferme la modale
                     set({
                         streakCount: state.previousStreak,
                         status: 'INCREASED',
@@ -80,7 +81,6 @@ export const useStreakStore = create<StreakState>()(
         {
             name: 'streak-storage',
             storage: createJSONStorage(() => AsyncStorage),
-            // 💡 On ne persiste QUE les vraies données, pas l'état éphémère de la modale
             partialize: (state) => ({
                 streakCount: state.streakCount,
                 previousStreak: state.previousStreak,

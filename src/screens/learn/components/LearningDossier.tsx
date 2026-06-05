@@ -1,7 +1,8 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import CountryFocusMap from '@/components/organisms/CountryFocusMap';
 import { getFlagImage } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
+import { feedbackService } from '@/utils/feedbackService';
 import { functions } from '@/utils/Functions';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,8 +19,10 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
 
     const handleNext = () => {
         if (page < 3) {
+            feedbackService.medium();
             setPage((prev) => (prev + 1) as 1 | 2 | 3);
         } else {
+            feedbackService.heavy();
             setPage(1);
             onNextCountry();
         }
@@ -28,6 +31,7 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
     // 💡 Nouvelle fonction pour le retour en arrière
     const handlePrev = () => {
         if (page > 1) {
+            feedbackService.light();
             setPage((prev) => (prev - 1) as 1 | 2 | 3);
         }
     };
@@ -50,14 +54,14 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
         <View style={styles.textPanel}>
             <View style={styles.panelHeader}>
                 <Ionicons name="information-circle" size={20} color={THEME.colors.primary} style={{ marginRight: 8 }} />
-                <CyberText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1 }}>
+                <MyText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1 }}>
                     INFORMATIONS
-                </CyberText>
+                </MyText>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-                <CyberText variant="body" style={{ color: THEME.colors.text.primary, lineHeight: 24 }}>
-                    {country.intro_fr || "Aucun renseignement supplémentaire n'est disponible pour ce territoire."}
-                </CyberText>
+                <MyText variant="body" style={{ color: THEME.colors.text.secondary, lineHeight: 24 }}>
+                    {functions.addLineBreaks(country.intro_fr) || "Aucun renseignement supplémentaire n'est disponible pour ce territoire."}
+                </MyText>
             </ScrollView>
         </View>
     );
@@ -69,9 +73,9 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
             <View style={styles.textPanel}>
                 <View style={styles.panelHeader}>
                     <Ionicons name="time" size={20} color={THEME.colors.primary} style={{ marginRight: 8 }} />
-                    <CyberText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1 }}>
+                    <MyText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1 }}>
                         HISTORIQUE
-                    </CyberText>
+                    </MyText>
                 </View>
                 <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
                     {mockDates.length > 0 ? (
@@ -82,19 +86,19 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
                                     {index < mockDates.length - 1 && <View style={styles.timelineLine} />}
                                 </View>
                                 <View style={styles.timelineContent}>
-                                    <CyberText variant="body" style={{ color: THEME.colors.primary }}>
+                                    <MyText variant="body" style={{ color: THEME.colors.primary }}>
                                         {item.year.toString()}
-                                    </CyberText>
-                                    <CyberText variant="bodySmall" colorType="secondary" style={{ marginTop: 2, fontStyle: 'italic' }}>
+                                    </MyText>
+                                    <MyText variant="bodySmall" colorType="secondary" style={{ marginTop: 2 }}>
                                         {item.event}
-                                    </CyberText>
+                                    </MyText>
                                 </View>
                             </View>
                         ))
                     ) : (
-                        <CyberText variant="bodySmall" colorType="disabled" align="center" style={{ paddingVertical: 20 }}>
+                        <MyText variant="bodySmall" colorType="disabled" align="center" style={{ paddingVertical: 20 }}>
                             Aucune archive chronologique disponible.
-                        </CyberText>
+                        </MyText>
                     )}
                 </ScrollView>
             </View>
@@ -122,16 +126,16 @@ export default function LearningDossier({ country, onNextCountry }: Props) {
                         </View>
 
                         <View style={{ flex: 1, justifyContent: 'center' }}>
-                            <CyberText variant="h1" style={styles.countryName} numberOfLines={1}>
+                            <MyText variant="h1" style={styles.countryName} numberOfLines={1}>
                                 {country.name_fr?.toUpperCase()}
-                            </CyberText>
+                            </MyText>
 
                             {/* La ligne de la capitale avec l'icône */}
                             <View style={styles.capitalRow}>
                                 <Ionicons name="location" size={14} color={THEME.colors.primary} />
-                                <CyberText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1, marginTop: 1 }}>
+                                <MyText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 1, marginTop: 1 }}>
                                     {country.capital || 'CAPITALE INCONNUE'}
-                                </CyberText>
+                                </MyText>
                             </View>
                         </View>
                     </View>
@@ -195,12 +199,12 @@ const InfoRow = ({ icon, label, value }: { icon: any, label: string, value: stri
             <Ionicons name={icon} size={18} color={THEME.colors.text.secondary} />
         </View>
         <View style={{ flex: 1 }}>
-            <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.secondary, letterSpacing: 0.5 }}>
+            <MyText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.secondary, letterSpacing: 0.5 }}>
                 {label}
-            </CyberText>
-            <CyberText variant="body" style={{ marginTop: 2, fontSize: 15 }}>
+            </MyText>
+            <MyText variant="body" style={{ marginTop: 2, fontSize: 15 }}>
                 {value}
-            </CyberText>
+            </MyText>
         </View>
     </View>
 );
@@ -209,15 +213,15 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     hudContainer: { flex: 1, justifyContent: 'space-between' },
 
-    bottomArea: { paddingHorizontal: 20, justifyContent: 'flex-end' },
+    bottomArea: { paddingHorizontal: THEME.paddings.horizontal, justifyContent: 'flex-end' },
     contentWrapper: { maxHeight: 400, flexShrink: 1, marginBottom: 20 },
 
-    generalInfoBox: { backgroundColor: 'rgba(15, 15, 17, 0.85)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 12 },
+    generalInfoBox: { backgroundColor: 'rgba(15, 15, 17, 0.85)', padding: 16, borderRadius: THEME.metrics.radius.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', gap: 12 },
     infoRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    iconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+    iconBox: { width: 36, height: 36, borderRadius: THEME.metrics.radius.md, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
     divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginLeft: 52 },
 
-    textPanel: { flexShrink: 1, backgroundColor: 'rgba(15, 15, 17, 0.85)', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+    textPanel: { flexShrink: 1, backgroundColor: 'rgba(15, 15, 17, 0.85)', borderRadius: THEME.metrics.radius.md, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
     panelHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 12 },
 
     timelineRow: { flexDirection: 'row' },
@@ -234,7 +238,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(15, 15, 17, 0.85)',
         paddingHorizontal: 8,
         paddingVertical: 8,
-        borderRadius: 32, // Forme de pilule
+        borderRadius: THEME.metrics.radius.lg,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.08)',
         shadowColor: '#000',
@@ -245,7 +249,7 @@ const styles = StyleSheet.create({
     navIconBtn: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: THEME.metrics.radius.md,
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
@@ -300,7 +304,7 @@ const styles = StyleSheet.create({
     flagWrapper: {
         width: 72,
         height: 48,
-        borderRadius: 8,
+        borderRadius: THEME.metrics.radius.sm,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: THEME.colors.glass.border,

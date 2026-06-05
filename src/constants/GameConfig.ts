@@ -2,7 +2,7 @@
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 
-export type GameLevel = 1 | 2 | 3 | 4;
+export type GameLevel = 1 | 2 | 3 | 4 | 5; // Ajout du 5 manquant dans votre type
 export type GameMode = 'country' | 'flag' | 'capital';
 
 export interface LevelConfig {
@@ -10,18 +10,13 @@ export interface LevelConfig {
     title: string;
     subTitle: string;
     description: string;
-    rules: {
-        time?: number;   // En secondes
-        accuracy: number;
-    };
-    color?: string; // Surcharge de couleur si besoin (ex: Boss ou Niveau Noir)
 }
 
 export interface ModeConfig {
     id: GameMode;
     label: string;
     color: string;
-    iconName: keyof typeof Ionicons.glyphMap; // Ajout de l'icône pour chaque mode
+    iconName: keyof typeof Ionicons.glyphMap;
     levels: LevelConfig[];
 }
 
@@ -29,35 +24,37 @@ export const GAME_CONFIG: Record<GameMode, ModeConfig> = {
     country: {
         id: 'country',
         label: 'PAYS',
-        color: THEME.colors.accent, // Cyan technologique
-        iconName: 'globe', // Exemple d'icône pour le mode "country"
+        color: THEME.colors.modes.country,
+        iconName: 'globe',
         levels: [
-            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Identifiez le bon pays parmi 4 propositions.", rules: { accuracy: 80, time: 600 } },
-            { id: 2, title: "TROUVER", subTitle: "LOCALISATION", description: "Localisez précisément le pays demandé sur la carte vierge.", rules: { accuracy: 100 } },
-            { id: 3, title: "SAISIR", subTitle: "ORTHOGRAPHE", description: "Tapez le nom du pays sans erreur d'orthographe.", rules: { accuracy: 100 } },
-            { id: 4, title: "CONTOUR", subTitle: "FORME", description: "Reconnaissez le pays uniquement à partir de sa forme.", rules: { accuracy: 100 }, color: THEME.colors.text.secondary } // Niveau "Noir/Gris" expert
+            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Sélectionnez le pays parmi 4 options." },
+            { id: 2, title: "TROUVER", subTitle: "LOCALISATION", description: "Pointez le pays sur la carte." },
+            { id: 3, title: "SAISIR", subTitle: "ORTHOGRAPHE", description: "Saisissez le nom exact du pays." },
+            { id: 4, title: "ELIMINER", subTitle: "STRATÉGIE", description: "Éliminez les pays jusqu'au dernier." },
+            { id: 5, title: "CONTOUR", subTitle: "FORME", description: "Identifiez le pays par sa silhouette." }
         ]
     },
     flag: {
         id: 'flag',
         label: 'DRAPEAUX',
-        color: THEME.colors.danger, // Rouge intense
-        iconName: 'flag', // Exemple d'icône pour le mode "flag"
+        color: THEME.colors.modes.flag,
+        iconName: 'flag',
         levels: [
-            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Associez le drapeau au bon pays.", rules: { accuracy: 100 } },
-            { id: 2, title: "TROUVER", subTitle: "MÉMOIRE", description: "Trouvez le pays sur la carte à partir de son drapeau.", rules: { accuracy: 100 } },
-            { id: 3, title: "SAISIR", subTitle: "EXPERTISE", description: "Nommez le pays correspondant au drapeau affiché.", rules: { accuracy: 100 } }
+            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Associez le drapeau au bon pays." },
+            { id: 2, title: "TROUVER", subTitle: "LOCALISATION", description: "Localisez le pays de ce drapeau." },
+            { id: 3, title: "SAISIR", subTitle: "ORTHOGRAPHE", description: "Saisissez le pays de ce drapeau." },
         ]
     },
     capital: {
         id: 'capital',
         label: 'CAPITALES',
-        color: THEME.colors.success, // Vert émeraude
-        iconName: 'trail-sign', // Exemple d'icône pour le mode "capital"
+        color: THEME.colors.modes.capital,
+        iconName: 'trail-sign',
         levels: [
-            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Quelle est la capitale de ce pays ?", rules: { accuracy: 100 } },
-            { id: 2, title: "TROUVER", subTitle: "PRÉCISION", description: "Placez le curseur sur l'emplacement de la capitale.", rules: { accuracy: 100 } },
-            { id: 3, title: "SAISIR", subTitle: "CONNAISSANCE", description: "Écrivez le nom de la capitale sans faute.", rules: { accuracy: 100 } }
+            { id: 1, title: "CHOISIR", subTitle: "QCM", description: "Sélectionnez la capitale parmi 4 options." },
+            { id: 2, title: "TROUVER", subTitle: "LOCALISATION", description: "Pointez la capitale sur la carte." },
+            { id: 3, title: "SAISIR", subTitle: "ORTHOGRAPHE", description: "Saisissez le nom de la capitale." },
+            { id: 4, title: "ELIMINER", subTitle: "STRATÉGIE", description: "Éliminez les capitales jusqu'à la bonne." },
         ]
     }
 };

@@ -1,30 +1,41 @@
 // src/screens/arena/components/RegionBadge.tsx
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
+import { feedbackService } from '@/utils/feedbackService';
 import { functions } from '@/utils/Functions';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef } from 'react';
 import { Animated, Dimensions, Image, Pressable, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 const { width } = Dimensions.get('window');
-const SPACING = 15;
-const CARD_WIDTH = (width - 40 - SPACING) / 2;
+const SPACING = THEME.metrics.spacing.md;
+const HORIZONTAL_PADDING = THEME.paddings.horizontal;
+const CARD_WIDTH = (width - (HORIZONTAL_PADDING * 2) - SPACING) / 2;
 
 interface Props {
     name: string;
     code: string;
-    level: 0 | 1 | 2 | 3;
+    completedLevels: number;
+    totalLevels: number;
+    themeColor?: string;
     onPress: () => void;
     isLarge?: boolean;
     isLocked?: boolean;
 }
 
-export default function RegionBadge({ name, code, level, onPress, isLarge = false, isLocked = false }: Props) {
+// 💡 Helper pour générer des opacités Hexadécimales dynamiques (ex: 0.5 -> "80")
+const getAlphaHex = (opacity: number) => {
+    const alpha = Math.round(opacity * 255);
+    return alpha.toString(16).padStart(2, '0').toUpperCase();
+};
+
+export default function RegionBadge({ name, code, completedLevels, totalLevels, themeColor = THEME.colors.primary, onPress, isLarge = false, isLocked = false }: Props) {
     const scaleValue = useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
-        Animated.spring(scaleValue, { toValue: 0.96, useNativeDriver: true, speed: 20 }).start();
+        Animated.spring(scaleValue, { toValue: 0.94, useNativeDriver: true, speed: 20 }).start();
     };
 
     const handlePressOut = () => {
@@ -33,33 +44,99 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
 
     const handleOnPress = () => {
         if (!isLocked) {
+            feedbackService.medium();
             onPress();
         } else {
+            feedbackService.error();
             showMessage({
                 message: "Région verrouillée",
                 description: "Complétez les niveaux précédents pour déverrouiller cette région.",
                 type: "warning",
-                backgroundColor: THEME.colors.background,
+                icon: 'warning',
+                backgroundColor: THEME.colors.backgroundLight,
                 color: THEME.colors.text.primary,
             });
         }
     }
 
-    // --- Typographie des couleurs via le Thème ---
-    const borderColor =
-        isLocked ? THEME.colors.glass.border :
-            level === 0 ? THEME.colors.levels.locked :
-                level === 1 ? THEME.colors.levels.bronze :
-                    level === 2 ? THEME.colors.levels.silver :
-                        THEME.colors.levels.gold;
+    const isFullyCompleted = completedLevels === totalLevels;
+    const isStarted = completedLevels > 0;
 
-    // Remplacement du [Black, RealBlack] par notre effet Glass Premium
-    const gradientColors =
-        isLocked ? [THEME.colors.glass.background, 'transparent'] :
-            level === 0 ? ['rgba(255,255,255,0.05)', 'transparent'] :
-                level === 1 ? [THEME.colors.levels.bronze + '30', 'transparent'] :
-                    level === 2 ? [THEME.colors.levels.silver + '30', 'transparent'] :
-                        [THEME.colors.levels.gold + '30', 'transparent'];
+    // 💡 Ratio de progression (De 0.0 à 1.0)
+    const progressRatio = completedLevels / totalLevels;
+
+    // --- Configuration Visuelle INTENSE ---
+    const getThemeConfig = () => {
+        if (isLocked) {
+            return {
+                border: THEME.colors.glass.background,
+                gradient: [THEME.colors.glass.background, 'rgba(0, 0, 0, 0.8)'],
+                titleColor: THEME.colors.text.disabled,
+                tagBg: THEME.colors.glass.background,
+                tagText: THEME.colors.text.disabled,
+                bgIconOpacity: 0.03,
+                glow: null,
+            };
+        }
+
+        if (!isStarted) {
+            // Niveau 0 : Neutre, Gris/Verre pur
+            return {
+                border: THEME.colors.glass.borderHighlight,
+                gradient: [THEME.colors.glass.border, 'transparent'],
+                titleColor: THEME.colors.text.primary,
+                tagBg: THEME.colors.glass.background,
+                tagText: THEME.colors.text.primary,
+                bgIconOpacity: 0.05,
+                glow: null,
+            };
+        }
+
+        if (isFullyCompleted) {
+            // Maîtrise Totale : 100% Puissance, Énorme Néon
+            return {
+                border: themeColor,
+                gradient: [`${themeColor}45`, 'transparent'],
+                titleColor: THEME.colors.text.primary,
+                tagBg: `${themeColor}35`,
+                tagText: themeColor,
+                bgIconOpacity: 0.15,
+                glow: {
+                    shadowColor: themeColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 16,
+                    elevation: 10,
+                }
+            };
+        }
+
+        // 💡 PROGRESSION DYNAMIQUE (De 1/5 à 4/5)
+        // Plus le joueur avance, plus l'opacité des bordures, du fond et du néon augmente !
+        const dynamicBorderOpacity = 0.3 + (0.5 * progressRatio); // De 40% (1/5) à 70% (4/5)
+        const dynamicBgOpacity = 0.05 + (0.25 * progressRatio);   // De 10% (1/5) à 25% (4/5)
+        const dynamicTagOpacity = 0.15 + (0.15 * progressRatio);  // De 18% (1/5) à 27% (4/5)
+        const dynamicIconOpacity = 0.05 + (0.05 * progressRatio); // L'icône de fond ressort peu à peu
+
+        return {
+            border: `${themeColor}${getAlphaHex(dynamicBorderOpacity)}`,
+            gradient: [`${themeColor}${getAlphaHex(dynamicBgOpacity)}`, 'transparent'],
+            titleColor: THEME.colors.text.primary,
+            tagBg: `${themeColor}${getAlphaHex(dynamicTagOpacity)}`,
+            tagText: themeColor,
+            bgIconOpacity: dynamicIconOpacity,
+            glow: {
+                // Le néon commence à apparaître timidement sur la fin
+                shadowColor: themeColor,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.25 * progressRatio, // Très faible au début, visible à 4/5
+                shadowRadius: 10 * progressRatio,
+                elevation: 4 * progressRatio,
+            },
+        };
+    };
+
+    const config = getThemeConfig();
 
     return (
         <Animated.View
@@ -67,8 +144,10 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
                 styles.wrapper,
                 {
                     width: isLarge ? '100%' : CARD_WIDTH,
-                    transform: [{ scale: scaleValue }]
-                }
+                    transform: [{ scale: scaleValue }],
+                    opacity: isLocked ? 0.6 : 1,
+                },
+                config.glow
             ]}
         >
             <Pressable
@@ -77,19 +156,21 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
                 onPressOut={handlePressOut}
                 style={{ flex: 1 }}
             >
-                {/* Le dégradé Premium qui fond dans l'arrière-plan */}
                 <LinearGradient
-                    colors={gradientColors as any}
+                    colors={config.gradient as any}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={[styles.container, { borderColor, backgroundColor: 'rgba(0,0,0,0.3)' }]}
+                    style={[styles.container, { borderColor: config.border, backgroundColor: 'rgba(0,0,0,0.4)' }]}
                 >
                     <View style={styles.bgIconContainer}>
                         <Image
                             source={functions.getImageSource(code)}
                             style={[
                                 styles.bgIcon,
-                                { tintColor: isLocked ? THEME.colors.levels.locked : THEME.colors.text.primary }
+                                {
+                                    tintColor: THEME.colors.text.primary,
+                                    opacity: config.bgIconOpacity // 💡 Opacité dynamique
+                                }
                             ]}
                             resizeMode="contain"
                         />
@@ -97,43 +178,49 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
 
                     <View style={styles.content}>
                         <View style={styles.header}>
-                            <View style={[styles.codeTag, { backgroundColor: THEME.colors.glass.background }]}>
-                                <CyberText
+                            <View style={[styles.codeTag, { backgroundColor: config.tagBg, borderColor: config.border }]}>
+                                <MyText
                                     variant="caps"
-                                    style={{ fontSize: 9, letterSpacing: 1, color: isLocked ? THEME.colors.levels.locked : borderColor }}
+                                    style={{ fontSize: 9, letterSpacing: 1, color: config.tagText }}
                                 >
                                     {code}
-                                </CyberText>
+                                </MyText>
                             </View>
 
                             {isLocked && (
-                                <Image source={functions.getIconSource('lock')} style={{ width: 12, height: 12, tintColor: THEME.colors.levels.locked }} />
+                                <Ionicons name="lock-closed" size={14} color={THEME.colors.text.disabled} />
                             )}
                         </View>
 
                         <View style={styles.titleContainer}>
-                            <CyberText
+                            <MyText
                                 variant="h2"
                                 style={{
-                                    color: isLocked ? THEME.colors.text.disabled : THEME.colors.text.primary,
+                                    color: config.titleColor,
                                     textAlign: 'left',
                                     letterSpacing: 0.5
                                 }}
                             >
                                 {name.toUpperCase()}
-                            </CyberText>
+                            </MyText>
                         </View>
 
                         <View style={styles.footer}>
                             {isLocked ? (
-                                <CyberText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.disabled, letterSpacing: 2 }}>
-                                    ACCESS DENIED
-                                </CyberText>
+                                <MyText variant="caps" style={{ fontSize: 9, color: THEME.colors.text.disabled, letterSpacing: 2 }}>
+                                    ACCÈS RESTREINT
+                                </MyText>
                             ) : (
                                 <View style={styles.progressRow}>
-                                    <EnergyCell active={level >= 1} color={THEME.colors.levels.bronze} />
-                                    <EnergyCell active={level >= 2} color={THEME.colors.levels.silver} />
-                                    <EnergyCell active={level >= 3} color={THEME.colors.levels.gold} />
+                                    {Array.from({ length: totalLevels }).map((_, index) => (
+                                        <EnergyCell
+                                            key={index}
+                                            active={index < completedLevels}
+                                            color={themeColor}
+                                            isStarted={isStarted}
+                                            isFullyCompleted={isFullyCompleted}
+                                        />
+                                    ))}
                                 </View>
                             )}
                         </View>
@@ -144,37 +231,46 @@ export default function RegionBadge({ name, code, level, onPress, isLarge = fals
     );
 }
 
-const EnergyCell = ({ active, color }: { active: boolean, color: string }) => (
-    <View style={styles.energyCellWrapper}>
-        <View style={[
-            styles.energyCell,
-            {
-                backgroundColor: active ? color : THEME.colors.glass.background,
-                shadowColor: active ? color : 'transparent',
-                shadowOpacity: active ? 0.8 : 0,
-                shadowRadius: 6,
-                borderColor: active ? color : 'transparent',
-                borderWidth: active ? 0 : 1,
-            }
-        ]} />
-    </View>
-);
+// --- SOUS COMPOSANT ENERGY CELL ---
+const EnergyCell = ({ active, color, isStarted, isFullyCompleted }: { active: boolean, color: string, isStarted: boolean, isFullyCompleted: boolean }) => {
+    const cellBorder = active ? color : (isStarted ? `${color}30` : THEME.colors.glass.borderHighlight);
+
+    const cellBg = active ? color : THEME.colors.glass.background;
+    const glowOpacity = active ? (isFullyCompleted ? 1 : 0.6) : 0;
+    const glowRadius = isFullyCompleted ? 8 : 4;
+
+    return (
+        <View style={styles.energyCellWrapper}>
+            <View style={[
+                styles.energyCell,
+                {
+                    backgroundColor: cellBg,
+                    shadowColor: active ? color : 'transparent',
+                    shadowOpacity: glowOpacity,
+                    shadowRadius: glowRadius,
+                    borderColor: cellBorder,
+                    borderWidth: 1,
+                }
+            ]} />
+        </View>
+    );
+};
 
 const styles = StyleSheet.create({
     wrapper: {
         height: 130,
         marginBottom: SPACING,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
     },
     container: {
         flex: 1,
-        borderRadius: 20,
+        borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
         overflow: 'hidden',
-        padding: 12,
+        padding: THEME.metrics.spacing.md,
     },
     bgIconContainer: {
         ...StyleSheet.absoluteFill,
@@ -182,13 +278,47 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
         overflow: 'hidden',
     },
-    bgIcon: { width: '90%', height: '90%', opacity: 0.08, right: -20, top: -20 },
-    content: { flex: 1, justifyContent: 'space-between' },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    codeTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: THEME.colors.glass.border },
-    titleContainer: { flex: 1, justifyContent: 'center' },
-    footer: { flexDirection: 'row', alignItems: 'flex-end' },
-    progressRow: { flexDirection: 'row', gap: 6, width: '100%' },
-    energyCellWrapper: { flex: 1, height: 4 },
-    energyCell: { flex: 1, borderRadius: 2 }
+    bgIcon: {
+        width: '100%',
+        height: '100%',
+        right: -30,
+        top: -10
+    },
+    content: {
+        flex: 1,
+        justifyContent: 'space-between'
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+    },
+    codeTag: {
+        paddingHorizontal: THEME.metrics.spacing.sm,
+        paddingVertical: THEME.metrics.spacing.xs,
+        borderRadius: 6,
+        borderWidth: 1,
+    },
+    titleContainer: {
+        flex: 1,
+        justifyContent: 'center'
+    },
+    footer: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        minHeight: 12,
+    },
+    progressRow: {
+        flexDirection: 'row',
+        gap: THEME.metrics.spacing.sm,
+        width: '100%'
+    },
+    energyCellWrapper: {
+        flex: 1,
+        height: 5
+    },
+    energyCell: {
+        flex: 1,
+        borderRadius: THEME.metrics.radius.round
+    }
 });

@@ -1,6 +1,9 @@
-import type { Country } from '@/data/Countries'; // Ajustez le chemin
+// src/screens/learn/components/DiscoveryGameController.tsx
+import MyButton from '@/components/atoms/MyButton'; // 💡 Import du bouton
+import type { Country } from '@/data/Countries';
 import { useLearningGame } from '@/hooks/useLearningGame';
-import { StyleSheet, View } from 'react-native';
+import { useEffect } from 'react'; // 💡 Import useEffect
+import { Keyboard, StyleSheet, View } from 'react-native'; // 💡 Import Keyboard
 
 import GameLevel1View from '@/screens/geogames/components/GameLevel1View';
 import GameLevel2View from '@/screens/geogames/components/GameLevel2View';
@@ -13,7 +16,6 @@ interface Props {
 }
 
 export default function DiscoveryGameController({ sessionCountries, onFinish }: Props) {
-    // 1. On lance le moteur de répétition espacée (Learning Hook)
     const {
         currentTask,
         phase,
@@ -21,19 +23,27 @@ export default function DiscoveryGameController({ sessionCountries, onFinish }: 
         totalInPhase,
         status,
         mapFeedback,
-        validateAnswer
+        validateAnswer,
+        nextTask // 💡 Récupération de l'action
     } = useLearningGame(sessionCountries, onFinish);
+
+    // 💡 GESTION INTELLIGENTE DU FLUX ET DU CLAVIER (Copie exacte des révisions)
+    useEffect(() => {
+        if (status === 'success') {
+            const timer = setTimeout(() => {
+                nextTask();
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else if (status === 'error') {
+            Keyboard.dismiss();
+        }
+    }, [status]);
 
     if (!currentTask) return null;
 
     const progress = (totalInPhase - queueLength) / totalInPhase;
-
-    // 2. Sélection de la vue selon la phase d'apprentissage
     const ViewComponent = currentTask.level === 1 ? GameLevel1View : GameLevel2View;
 
-    // 3. ADAPTATEUR D'ENGINE
-    // Les vues de l'Arène s'attendent à recevoir un objet "engine" complet issu de useArcadeGame.
-    // On mappe nos données d'apprentissage pour tromper la vue et lui donner ce qu'elle veut.
     const engineAdapter = {
         currentQuestion: {
             target: currentTask.target,
@@ -42,14 +52,12 @@ export default function DiscoveryGameController({ sessionCountries, onFinish }: 
         validateAnswer: validateAnswer,
         mapFeedback: mapFeedback,
         status: status,
-        // Les valeurs suivantes sont requises par le type, mais peu ou pas utilisées dans les Vues 1 & 2
         currentIndex: totalInPhase - queueLength,
         total: totalInPhase,
         errors: 0,
         elapsedTime: 0,
-    } as any; // On force le type pour éviter l'erreur de ReturnType<typeof useArcadeGame>
+    } as any;
 
-    // Récupération de la région cible (Assurez-vous du nom de la propriété, ex: continentId)
     const currentRegionCode = (currentTask.target as any).continentId || 'WLD';
 
     return (
@@ -66,8 +74,22 @@ export default function DiscoveryGameController({ sessionCountries, onFinish }: 
                     engine={engineAdapter}
                     mode={currentTask.mode}
                     regionCode={currentRegionCode}
+                    hasFloatingButton={true}
                 />
             </View>
+
+            {/* 💡 BOUTON FLOTTANT D'ERREUR */}
+            {status === 'error' && (
+                <View style={styles.floatingErrorBtn}>
+                    <MyButton
+                        title="J'AI COMPRIS"
+                        onPress={nextTask}
+                        variant="danger"
+                        iconRight="arrow-forward"
+                        iconLeft='checkmark'
+                    />
+                </View>
+            )}
 
         </View>
     );
@@ -80,6 +102,19 @@ const styles = StyleSheet.create({
     },
     gameWrapper: {
         flex: 1,
-        paddingBottom: 60,
+        // On retire le paddingBottom pour que la carte respire
+    },
+    // 💡 Style du bouton flottant (Identique à RevisionSessionScreen)
+    floatingErrorBtn: {
+        position: 'absolute',
+        bottom: 40,
+        left: THEME.paddings.horizontal,
+        right: THEME.paddings.horizontal,
+        zIndex: 50,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 5,
+        elevation: 8,
     }
 });

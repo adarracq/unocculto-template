@@ -1,8 +1,9 @@
 // src/screens/home/components/LearningSheetContent.tsx
-import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
+import { MyText } from '@/components/atoms/MyText';
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
+import { feedbackService } from '@/utils/feedbackService';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -41,18 +42,18 @@ export default function LearningSheetContent({ currentZoneId, onSelectZone, rema
                         <TouchableOpacity
                             key={item.id}
                             activeOpacity={0.7}
-                            onPress={() => onSelectZone(item.id)}
+                            onPress={() => { feedbackService.light(); onSelectZone(item.id); }}
                             style={[styles.zoneRow, isSelected && styles.zoneRowActive]}
                         >
                             <View style={styles.leftInfo}>
                                 <Ionicons name={isSelected ? "radio-button-on" : "radio-button-off"} size={20} color={isSelected ? THEME.colors.primary : THEME.colors.text.disabled} />
-                                <CyberText variant="body" style={{ fontSize: 16, color: isSelected ? THEME.colors.text.primary : THEME.colors.text.secondary }}>
+                                <MyText variant="body" style={{ fontSize: 16, color: isSelected ? THEME.colors.text.primary : THEME.colors.text.secondary }}>
                                     {item.name}
-                                </CyberText>
+                                </MyText>
                             </View>
-                            <CyberText variant="caps" style={{ fontSize: 12, color: progress === 100 ? THEME.colors.success : THEME.colors.text.secondary }}>
+                            <MyText variant="caps" style={{ fontSize: 12, color: progress === 100 ? THEME.colors.success : THEME.colors.text.secondary }}>
                                 {progress}%
-                            </CyberText>
+                            </MyText>
                         </TouchableOpacity>
                     );
                 })}
@@ -73,7 +74,7 @@ export default function LearningSheetContent({ currentZoneId, onSelectZone, rema
 const styles = StyleSheet.create({
     container: { paddingTop: 10, paddingBottom: 10 },
     listContainer: { gap: 10, marginBottom: 24 },
-    zoneRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: 12, backgroundColor: THEME.colors.glass.background, borderWidth: 1, borderColor: 'transparent' },
+    zoneRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16, borderRadius: THEME.metrics.radius.md, backgroundColor: THEME.colors.glass.background, borderWidth: 1, borderColor: 'transparent' },
     zoneRowActive: { borderColor: THEME.colors.primary, backgroundColor: 'rgba(255,255,255,0.05)' },
     leftInfo: { flexDirection: 'row', alignItems: 'center', gap: 16 }
 });

@@ -1,6 +1,7 @@
 // src/hooks/useLearningGame.ts
 import { GameMode } from '@/constants/GameConfig';
 import type { Country } from '@/data/Countries';
+import { feedbackService } from '@/utils/feedbackService';
 import { useEffect, useState } from 'react';
 
 export interface LearningTask {
@@ -17,25 +18,28 @@ export const useLearningGame = (batch: Country[], onFinish: () => void) => {
     const [mapFeedback, setMapFeedback] = useState<Record<string, 'correct' | 'wrong' | 'target'>>({});
     const [totalInPhase, setTotalInPhase] = useState(0);
 
-    // Initialisation de la Phase 1 au montage
     useEffect(() => {
         if (batch.length > 0) {
             initPhase(1);
         }
     }, [batch]);
 
+    useEffect(() => {
+        if (queue.length > 0) {
+            setMapFeedback({});
+        }
+    }, [queue[0]?.target?.code, queue[0]?.mode]);
+
     const initPhase = (p: 1 | 2) => {
         let tasks: LearningTask[] = [];
 
-        // Génération des 12 tâches (4 pays x 3 modes)
         batch.forEach(target => {
             const modes: GameMode[] = ['country', 'flag'];
-            if (target.capital) modes.push('capital'); // Sécurité si pas de capitale
+            if (target.capital) modes.push('capital');
 
             modes.forEach(mode => {
                 tasks.push({
                     target,
-                    // Les options sont toujours exactement les 4 pays du lot (mélangés)
                     options: [...batch].sort(() => Math.random() - 0.5),
                     mode,
                     level: p
@@ -43,12 +47,12 @@ export const useLearningGame = (batch: Country[], onFinish: () => void) => {
             });
         });
 
-        // Mélange initial de la file
         tasks = tasks.sort(() => Math.random() - 0.5);
         setQueue(tasks);
         setTotalInPhase(tasks.length);
         setPhase(p);
         setStatus('playing');
+        setMapFeedback({});
     };
 
     const currentTask = queue[0];
@@ -60,47 +64,45 @@ export const useLearningGame = (batch: Country[], onFinish: () => void) => {
 
         if (isCorrect) {
             setStatus('success');
+            feedbackService.success();
             setMapFeedback({ [currentTask.target.code]: 'correct' });
-
-            setTimeout(() => {
-                const newQueue = [...queue.slice(1)]; // On retire la question réussie
-
-                if (newQueue.length === 0) {
-                    if (phase === 1) {
-                        initPhase(2); // On passe au niveau 2
-                    } else {
-                        onFinish(); // Jeu terminé !
-                    }
-                } else {
-                    setQueue(newQueue);
-                    setStatus('playing');
-                    setMapFeedback({});
-                }
-            }, 1000);
-
         } else {
             setStatus('error');
+            feedbackService.error();
             setMapFeedback({
                 [answerCode]: 'wrong',
-                [currentTask.target.code]: 'correct' // Montre la bonne réponse
+                [currentTask.target.code]: 'correct'
             });
+        }
+    };
 
-            setTimeout(() => {
-                const failedTask = queue[0];
-                const remaining = [...queue.slice(1)];
+    // 💡 NOUVEAU : Fonction manuelle pour passer à la suite
+    const nextTask = () => {
+        if (status === 'playing') return;
 
-                // 💡 RÉINJECTION : On replace la question ratée aléatoirement dans la liste restante
-                // (Mais on évite de la remettre immédiatement en position 0 si la liste est longue)
-                const insertIndex = remaining.length > 1
-                    ? Math.floor(Math.random() * (remaining.length - 1)) + 1
-                    : 0;
+        const current = queue[0];
+        const remaining = [...queue.slice(1)];
 
-                remaining.splice(insertIndex, 0, failedTask);
+        if (status === 'error') {
+            // RÉINJECTION : On replace la question ratée aléatoirement dans la liste restante
+            const insertIndex = remaining.length > 1
+                ? Math.floor(Math.random() * (remaining.length - 1)) + 1
+                : 0;
 
+            remaining.splice(insertIndex, 0, current);
+            setQueue(remaining);
+            setStatus('playing');
+        } else if (status === 'success') {
+            if (remaining.length === 0) {
+                if (phase === 1) {
+                    initPhase(2);
+                } else {
+                    onFinish();
+                }
+            } else {
                 setQueue(remaining);
                 setStatus('playing');
-                setMapFeedback({});
-            }, 1500);
+            }
         }
     };
 
@@ -111,6 +113,7 @@ export const useLearningGame = (batch: Country[], onFinish: () => void) => {
         totalInPhase,
         status,
         mapFeedback,
-        validateAnswer
+        validateAnswer,
+        nextTask // 💡 On l'expose pour l'UI
     };
 };

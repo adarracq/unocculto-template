@@ -1,7 +1,8 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { GameMode } from '@/constants/GameConfig';
 import { Country, getFlagImage } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
+import { feedbackService } from '@/utils/feedbackService';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -18,6 +19,11 @@ export default function ArcadeControls({ options, targetCode, mode, status, onSe
 
     const handlePress = (code: string) => {
         if (status !== 'playing') return; // Bloque le clic si l'animation est en cours
+        if (code === targetCode)
+            feedbackService.success();
+        else
+            feedbackService.error();
+
         setSelectedCode(code);
         onSelect(code);
     };
@@ -76,7 +82,7 @@ export default function ArcadeControls({ options, targetCode, mode, status, onSe
         return (
             // 💡 Le wrapper "dur" qui force les limites du texte
             <View style={styles.textWrapper}>
-                <CyberText
+                <MyText
                     variant="h3"
                     align="center"
                     numberOfLines={2}
@@ -85,7 +91,7 @@ export default function ArcadeControls({ options, targetCode, mode, status, onSe
                     style={styles.label}
                 >
                     {label}
-                </CyberText>
+                </MyText>
             </View>
         );
     };
@@ -113,7 +119,6 @@ export default function ArcadeControls({ options, targetCode, mode, status, onSe
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
@@ -124,7 +129,8 @@ const styles = StyleSheet.create({
     },
     button: {
         width: '47%',
-        minHeight: 80,
+        aspectRatio: 1.5, // 💡 LA MAGIE EST ICI : Tous les boutons auront ce ratio strict (Largeur / Hauteur)
+        // minHeight: 80, <-- 🗑️ Supprimez cette ligne
         borderRadius: THEME.metrics.radius.md,
         borderWidth: 1.5,
         justifyContent: 'center',
@@ -132,9 +138,8 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         position: 'relative',
     },
-    // 💡 NOUVEAUX STYLES DE TEXTE
     textWrapper: {
-        flex: 1,
+        flex: 1, // Prend toute la place du bouton
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
@@ -145,11 +150,11 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         textAlign: 'center',
         width: '100%',
-        flexShrink: 1, // 💡 Oblige le texte à rétrécir au lieu de déborder
+        flexShrink: 1,
     },
     flagWrapper: {
         width: '100%',
-        aspectRatio: 1.5,
+        height: '100%', // 💡 On remplace l'aspectRatio ici par un remplissage total, car le parent s'en charge
     },
     flagImg: {
         width: '100%',

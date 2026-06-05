@@ -1,4 +1,4 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { useLearningStore } from '@/store/useLearningStore';
 import { THEME } from '@/theme/theme';
@@ -7,7 +7,9 @@ import { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import WorldProgressMap from '@/components/organisms/WorldProgressMap'; // Import direct
+import { feedbackService } from '@/utils/feedbackService';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CountryDetailModal from './components/CountryDetailModal';
 import CountryListItem from './components/CountryListItem';
 import GlobalStats from './components/GlobalStats';
@@ -73,11 +75,13 @@ export default function ProfileScreen() {
 
 
     return (
-        <LinearGradient colors={[THEME.colors.backgroundLight, THEME.colors.background]} style={styles.container}>
-
-            <CyberText variant="h1" style={{ padding: 20 }}>
+        <LinearGradient
+            colors={[THEME.colors.backgroundVeryLight, THEME.colors.background]}
+            style={[styles.container, { paddingTop: THEME.paddings.top + useSafeAreaInsets().top }]}
+        >
+            <MyText variant="h1" >
                 Tableau de bord
-            </CyberText>
+            </MyText>
 
             <View style={styles.segmentedControl}>
 
@@ -85,29 +89,29 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                         key={reg.id}
                         activeOpacity={0.8}
-                        onPress={() => setSelectedRegion(reg.id)}
+                        onPress={() => { feedbackService.light(); setSelectedRegion(reg.id); }}
                         style={[styles.segmentBtn, selectedRegion === reg.id && styles.segmentBtnActive]}
                     >
-                        <CyberText variant="caps" style={[selectedRegion === reg.id ? styles.segmentTextActive : styles.segmentText]}>
+                        <MyText variant="caps" style={[selectedRegion === reg.id ? styles.segmentTextActive : styles.segmentText]}>
                             {reg.id}
-                        </CyberText>
+                        </MyText>
                     </TouchableOpacity>
                 ))}
             </View>
-            <View style={styles.statsContainer}>
+            <View >
                 <GlobalStats visited={stats.visited} total={stats.total} mastered={stats.mastered} urgent={stats.urgent} />
             </View>
 
             <View style={styles.toggleContainer}>
                 <View style={styles.toggleTrack}>
-                    <TouchableOpacity onPress={() => setViewMode('map')} style={[styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}>
+                    <TouchableOpacity onPress={() => { feedbackService.light(); setViewMode('map'); }} style={[styles.segmentBtn, viewMode === 'map' && styles.segmentBtnActive]}>
                         <Ionicons name="map-outline" size={16} color={viewMode === 'map' ? THEME.colors.text.primary : THEME.colors.text.disabled} style={{ marginRight: 6 }} />
-                        <CyberText variant="caps" style={[viewMode === 'map' ? styles.segmentTextActive : styles.segmentText]}>Carte</CyberText>
+                        <MyText variant="caps" style={[viewMode === 'map' ? styles.segmentTextActive : styles.segmentText]}>Carte</MyText>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}>
+                    <TouchableOpacity onPress={() => { feedbackService.light(); setViewMode('list'); }} style={[styles.segmentBtn, viewMode === 'list' && styles.segmentBtnActive]}>
                         <Ionicons name="list-outline" size={16} color={viewMode === 'list' ? THEME.colors.text.primary : THEME.colors.text.disabled} style={{ marginRight: 6 }} />
-                        <CyberText variant="caps" style={[viewMode === 'list' ? styles.segmentTextActive : styles.segmentText]}>Liste</CyberText>
+                        <MyText variant="caps" style={[viewMode === 'list' ? styles.segmentTextActive : styles.segmentText]}>Liste</MyText>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -129,13 +133,13 @@ export default function ProfileScreen() {
                         data={filteredCountries}
                         keyExtractor={(item) => item.code}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 80, gap: 12 }}
+                        contentContainerStyle={{ gap: THEME.metrics.spacing.sm, paddingBottom: THEME.paddings.bottom }}
                         renderItem={({ item }) => (
                             // 💡 Utilisation du nouveau composant ici
                             <CountryListItem
                                 country={item}
                                 memoryData={memoryMap[item.code]}
-                                onPress={() => setSelectedCountryCode(item.code)}
+                                onPress={() => { feedbackService.light(); setSelectedCountryCode(item.code); }}
                             />
                         )}
                     />
@@ -148,20 +152,20 @@ export default function ProfileScreen() {
                 visible={!!selectedCountryCode}
                 onClose={() => setSelectedCountryCode(null)}
             />
-
         </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: 40, },
-    regionSelectorContainer: { paddingBottom: 20 },
-    regionScroll: { paddingHorizontal: 20, gap: 10 },
-    statsContainer: { paddingHorizontal: 20, marginBottom: 20 },
-    toggleContainer: { paddingHorizontal: 20, marginBottom: 16, alignItems: 'center' },
-    toggleTrack: { flexDirection: 'row', backgroundColor: THEME.colors.glass.background, borderRadius: 12, padding: 4 },
-    contentArea: { flex: 1, paddingHorizontal: 20, },
-    mapWrapper: { flex: 1, marginBottom: 80 },
+    container: {
+        flex: 1,
+        paddingHorizontal: THEME.paddings.horizontal,
+        gap: THEME.metrics.spacing.md
+    },
+    toggleContainer: { alignItems: 'center', },
+    toggleTrack: { flexDirection: 'row', backgroundColor: THEME.colors.glass.background, borderRadius: THEME.metrics.radius.sm, padding: 4 },
+    contentArea: { flex: 1, },
+    mapWrapper: { flex: 1, marginBottom: 20 },
 
     logbookRow: {
         flexDirection: 'row',
@@ -169,7 +173,7 @@ const styles = StyleSheet.create({
         gap: 15,
         backgroundColor: THEME.colors.glass.background, // Fond très légèrement visible
         padding: 16,
-        borderRadius: 16,
+        borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
         borderColor: THEME.colors.glass.border
     },
@@ -179,7 +183,7 @@ const styles = StyleSheet.create({
     rowFlag: {
         width: 44,
         height: 44,
-        borderRadius: 22, // 💡 Rend le drapeau parfaitement rond
+        borderRadius: THEME.metrics.radius.round,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)'
     },
@@ -187,7 +191,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center'
     },
-    segmentedControl: { flexDirection: 'row', backgroundColor: THEME.colors.glass.background, borderRadius: 14, padding: 4, marginBottom: 16, borderWidth: 1, borderColor: THEME.colors.glass.border, marginHorizontal: 20 },
+    segmentedControl: { flexDirection: 'row', backgroundColor: THEME.colors.glass.background, borderRadius: 14, padding: 4, borderWidth: 1, borderColor: THEME.colors.glass.border, },
     segmentBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', gap: 6 },
     segmentBtnActive: { backgroundColor: THEME.colors.glass.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
     segmentText: { color: THEME.colors.text.disabled, fontSize: 12 },

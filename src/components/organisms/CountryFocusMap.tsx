@@ -1,5 +1,5 @@
 // src/components/organisms/CountryFocusMap.tsx
-import { MICRO_STATES } from '@/data/Countries';
+import { MICRO_ISLANDS_STATES, MICRO_STATES } from '@/data/Countries';
 import WorldGeoJSON from '@/data/countriesM.json';
 import { THEME } from '@/theme/theme';
 import MapLibreGL from '@maplibre/maplibre-react-native';
@@ -16,7 +16,7 @@ interface Props {
 export default function CountryFocusMap({ countryCode, centerCoordinate, zoom = 3 }: Props) {
     const cameraRef = useRef<MapLibreGL.Camera>(null);
 
-    if (MICRO_STATES.includes(countryCode)) {
+    if (MICRO_STATES.includes(countryCode) && !MICRO_ISLANDS_STATES.includes(countryCode)) {
         zoom = zoom * 2; // Zoom plus serré pour les micro-états
     }
 
@@ -72,7 +72,7 @@ export default function CountryFocusMap({ countryCode, centerCoordinate, zoom = 
 
                 {/* LAYER 1 : LE RESTE DU MONDE */}
                 <MapLibreGL.ShapeSource id="baseSource" shape={baseWorld}>
-                    <MapLibreGL.FillLayer id="baseFill" style={{ fillColor: '#121212' }} />
+                    <MapLibreGL.FillLayer id="baseFill" style={{ fillColor: THEME.colors.backgroundLight }} />
                     <MapLibreGL.LineLayer id="baseLine" style={{ lineColor: 'rgba(255,255,255,0.05)', lineWidth: 1 }} />
                 </MapLibreGL.ShapeSource>
 

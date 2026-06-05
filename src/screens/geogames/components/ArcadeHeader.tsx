@@ -1,73 +1,62 @@
-// src/screens/arena/geogames/components/ArcadeHeader.tsx
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
     currentIndex: number;
     total: number;
-    timeLeft: number | null; // null si temps infini
+    timeLeft: number | null;
     accuracy: number;
     title: string;
+    subtitle?: string; // 💡 Ajout d'un sous-titre dynamique
 }
 
-export default function ArcadeHeader({ currentIndex, total, timeLeft, accuracy, title }: Props) {
-    // Calcul de la progression
+export default function ArcadeHeader({ currentIndex, total, timeLeft, accuracy, title, subtitle }: Props) {
     const progress = (currentIndex / total) * 100;
-
-    // Le timer devient rouge s'il reste moins de 10 secondes
     const isTimerDanger = timeLeft !== null && timeLeft <= 10;
     const timerColor = isTimerDanger ? THEME.colors.danger : THEME.colors.primary;
 
     return (
-        <View style={styles.container}>
-
-            {/* Ligne 1 : Titre & Stats */}
+        <View style={[styles.container, { paddingTop: THEME.paddings.top + useSafeAreaInsets().top }]}>
             <View style={styles.topRow}>
                 <View style={styles.titleBox}>
-                    <CyberText variant="caps" colorType="secondary" style={{ fontSize: 10, letterSpacing: 2 }}>
-                        NIVEAU EN COURS
-                    </CyberText>
-                    <CyberText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 2 }}>
+                    <MyText variant="caps" colorType="secondary" style={{ fontSize: 10, letterSpacing: 2 }}>
+                        {subtitle || 'NIVEAU EN COURS'}
+                    </MyText>
+                    <MyText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 2 }}>
                         {title}
-                    </CyberText>
+                    </MyText>
                 </View>
 
                 <View style={styles.statsBox}>
                     <View style={styles.statItem}>
                         <Ionicons name="time-outline" size={14} color={THEME.colors.text.secondary} />
-                        <CyberText variant="bodySmall" style={styles.monoText}>
+                        <MyText variant="bodySmall" style={styles.monoText}>
                             {Math.round(accuracy)}%
-                        </CyberText>
+                        </MyText>
                     </View>
 
                     {timeLeft !== null && (
                         <View style={[styles.statItem, isTimerDanger && styles.statDanger]}>
                             <Ionicons name="time" size={14} color={timerColor} />
-                            <CyberText variant="bodySmall" style={[styles.monoText, { color: timerColor }]}>
+                            <MyText variant="bodySmall" style={[styles.monoText, { color: timerColor }]}>
                                 {timeLeft}s
-                            </CyberText>
+                            </MyText>
                         </View>
                     )}
                 </View>
             </View>
 
-            {/* Ligne 2 : Barre de progression du quiz */}
             <View style={styles.progressRow}>
-                <CyberText variant="caps" style={{ color: THEME.colors.text.secondary, fontSize: 10, width: 40 }}>
+                <MyText variant="caps" style={{ color: THEME.colors.text.secondary, fontSize: 10, width: 40 }}>
                     {currentIndex}/{total}
-                </CyberText>
+                </MyText>
                 <View style={styles.progressBarBg}>
-                    <View
-                        style={[
-                            styles.progressBarFill,
-                            { width: `${progress}%` }
-                        ]}
-                    />
+                    <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
                 </View>
             </View>
-
         </View>
     );
 }
@@ -75,61 +64,23 @@ export default function ArcadeHeader({ currentIndex, total, timeLeft, accuracy, 
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: THEME.metrics.spacing.lg,
-        paddingTop: 60, // Safe Area (à ajuster)
         paddingBottom: THEME.metrics.spacing.md,
-        backgroundColor: 'rgba(5,5,7,0.8)', // OLED transparent
+        backgroundColor: 'rgba(5,5,7,0.8)',
         borderBottomWidth: 1,
         borderBottomColor: THEME.colors.glass.border,
         zIndex: 10,
     },
-    topRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        marginBottom: 16,
-    },
-    titleBox: {
-        flex: 1,
-    },
-    statsBox: {
-        flexDirection: 'row',
-        gap: 12,
-    },
+    topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 },
+    titleBox: { flex: 1 },
+    statsBox: { flexDirection: 'row', gap: 12 },
     statItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-        gap: 6,
-        borderWidth: 1,
-        borderColor: THEME.colors.glass.border,
+        flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 8, paddingVertical: 4, borderRadius: THEME.metrics.radius.sm,
+        gap: 6, borderWidth: 1, borderColor: THEME.colors.glass.border,
     },
-    statDanger: {
-        borderColor: THEME.colors.danger + '40',
-        backgroundColor: THEME.colors.danger + '10',
-    },
-    monoText: {
-        fontFamily: 'Courier New', // Pour éviter que le timer saute de largeur
-        fontWeight: 'bold',
-        color: THEME.colors.text.primary,
-    },
-    progressRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    progressBarBg: {
-        flex: 1,
-        height: 4,
-        backgroundColor: THEME.colors.glass.border,
-        borderRadius: 2,
-        overflow: 'hidden',
-    },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: THEME.colors.primary,
-        borderRadius: 2,
-    }
+    statDanger: { borderColor: THEME.colors.danger + '40', backgroundColor: THEME.colors.danger + '10' },
+    monoText: { fontFamily: 'Courier New', fontWeight: 'bold', color: THEME.colors.text.primary },
+    progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    progressBarBg: { flex: 1, height: 4, backgroundColor: THEME.colors.glass.border, borderRadius: 2, overflow: 'hidden' },
+    progressBarFill: { height: '100%', backgroundColor: THEME.colors.primary, borderRadius: 2 }
 });

@@ -1,5 +1,4 @@
-import { CyberText } from '@/components/atoms/CyberText';
-import { GlassContainer } from '@/components/atoms/GlassContainer';
+import { MyText } from '@/components/atoms/MyText';
 import { THEME } from '@/theme/theme';
 import { functions } from '@/utils/Functions'; // Restauration de votre utilitaire
 import { Ionicons } from '@expo/vector-icons';
@@ -55,41 +54,39 @@ export default function DailyMissionCard({ title, type, regionId, onPress }: Pro
                 />
             </View>
 
-            {/* Le GlassContainer vient se poser par-dessus le fond et le gradient */}
-            {/* On lui met une intensité faible (15) pour bien voir le gradient en dessous */}
-            <GlassContainer intensity={15} borderRadius={THEME.metrics.radius.md}>
+            <View style={{ padding: THEME.metrics.spacing.lg }} pointerEvents="none">
 
                 {/* En-tête : Tags et Timer */}
                 <View style={styles.badgeRow}>
                     <View style={styles.tagContainer}>
-                        <CyberText variant="caps" style={{ color: THEME.colors.background, fontSize: 10 }}>
+                        <MyText variant="caps" style={{ color: THEME.colors.background, fontSize: 10 }}>
                             DEFI DU JOUR
-                        </CyberText>
+                        </MyText>
                     </View>
-                    <CyberText variant="caps" style={{ fontSize: 10 }}>
+                    <MyText variant="caps" style={{ fontSize: 10 }}>
                         EXPIRE DANS {timeLeft}
-                    </CyberText>
+                    </MyText>
                 </View>
 
                 {/* Contenu principal */}
                 <View style={styles.contentRow}>
                     <View style={{ flex: 1, zIndex: 1 }}>
-                        <CyberText variant="caps" colorType="secondary" style={{ marginBottom: 4 }}>
+                        <MyText variant="caps" colorType="secondary" style={{ marginBottom: 4 }}>
                             CIBLE : {type}
-                        </CyberText>
-                        <CyberText variant="h2">{title}</CyberText>
+                        </MyText>
+                        <MyText variant="h2">{title}</MyText>
                     </View>
 
                     {/* Pastille Bonus XP */}
                     <View style={styles.bonusPill}>
-                        <CyberText variant="body" style={{ color: THEME.colors.background, fontFamily: 'Jakarta-Bold', fontSize: 12, marginRight: 4 }}>
+                        <MyText variant="body" style={{ color: THEME.colors.background, fontFamily: 'Jakarta-Bold', fontSize: 12, marginRight: 4 }}>
                             GRATUIT
-                        </CyberText>
+                        </MyText>
                         <Ionicons name='ticket' size={16} color={THEME.colors.background} />
                     </View>
                 </View>
 
-            </GlassContainer>
+            </View>
         </TouchableOpacity>
     );
 }
@@ -98,7 +95,6 @@ const styles = StyleSheet.create({
     container: {
         marginBottom: THEME.metrics.spacing.xl,
         width: '100%',
-        // CORRECTION DE LA BORDURE : La bordure est sur le parent, avec un overflow et le même radius que le GlassContainer !
         borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
         borderColor: THEME.colors.primary,

@@ -1,17 +1,14 @@
-// src/screens/arena/components/GameLevel3View.tsx
 import { getFlagImage, MICRO_STATES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
-import { useMemo } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Image, Keyboard, Platform, StyleSheet, View } from 'react-native';
 
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import InteractiveMap from '@/components/organisms/InteractiveMap';
 import { Ionicons } from '@expo/vector-icons';
 import type { GameViewProps } from '../GeoGameScreen';
 import ArcadeSaisieControls from './ArcadeSaisieControls';
 
-// --- ALGORITHME DE TOLÉRANCE (Distance de Levenshtein) ---
-// Calcule le nombre de caractères de différence entre deux chaînes
 const getLevenshteinDistance = (a: string, b: string): number => {
     const matrix = [];
     for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -23,10 +20,10 @@ const getLevenshteinDistance = (a: string, b: string): number => {
                 matrix[i][j] = matrix[i - 1][j - 1];
             } else {
                 matrix[i][j] = Math.min(
-                    matrix[i - 1][j - 1] + 1, // Remplacement
+                    matrix[i - 1][j - 1] + 1,
                     Math.min(
-                        matrix[i][j - 1] + 1, // Insertion
-                        matrix[i - 1][j] + 1  // Suppression
+                        matrix[i][j - 1] + 1,
+                        matrix[i - 1][j] + 1
                     )
                 );
             }
@@ -35,57 +32,71 @@ const getLevenshteinDistance = (a: string, b: string): number => {
     return matrix[b.length][a.length];
 };
 
-export default function GameLevel3View({ engine, mode }: GameViewProps) {
+// 💡 1. Extension des props pour accueillir hasFloatingButton
+interface Props extends GameViewProps {
+    hasFloatingButton?: boolean;
+}
+
+export default function GameLevel3View({ engine, mode, hasFloatingButton = false }: Props) { // 💡 2. Ajout de la prop
     const { currentQuestion, validateAnswer, mapFeedback, status } = engine;
 
-    // Sécurité au chargement
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSubscription = Keyboard.addListener(showEvent, (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+        });
+        const hideSubscription = Keyboard.addListener(hideEvent, () => {
+            setKeyboardHeight(0);
+        });
+
+        return () => {
+            showSubscription.remove();
+            hideSubscription.remove();
+        };
+    }, []);
+
     if (!currentQuestion) return null;
     const target = currentQuestion.target;
 
-    // La réponse attendue brute FR (pour l'affichage et la validation)
     const expectedRawAnswer = mode === 'capital'
         ? (target.capital || 'Inconnue')
         : (target.name_fr || 'Inconnu');
 
-    // La réponse attendue brute EN (pour la validation alternative)
-    // (Si tu as aussi un champ `target.capital_en`, tu peux l'ajouter ici)
     const expectedRawAnswerEn = mode === 'capital'
         ? (target.capital || 'Inconnue')
         : (target.name_en || 'Unknown');
 
-    // --- LOGIQUE DE VALIDATION TEXTUELLE TOLÉRANTE ---
     const handleTextSubmit = (text: string) => {
-        // 1. Nettoyage extrême
         const normalize = (str: string) =>
             str.normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+                .replace(/[\u0300-\u036f]/g, "")
                 .toLowerCase()
-                .replace(/[-']/g, " ") // Remplace les tirets et apostrophes par des espaces
-                .replace(/[^a-z0-9 ]/g, "") // Supprime la ponctuation
-                .replace(/\s+/g, " ") // Condense les espaces
+                .replace(/[-']/g, " ")
+                .replace(/[^a-z0-9 ]/g, "")
+                .replace(/\s+/g, " ")
                 .trim();
 
         const input = normalize(text);
         const expectedFr = normalize(expectedRawAnswer);
         const expectedEn = normalize(expectedRawAnswerEn);
 
-        // 2. Calcul de la distance pour les deux langues
         const distanceFr = getLevenshteinDistance(input, expectedFr);
         const distanceEn = getLevenshteinDistance(input, expectedEn);
 
-        // 3. Calcul de la tolérance indépendante (car FR et EN n'ont pas la même longueur)
         const maxErrorsAllowedFr = expectedFr.length <= 3 ? 0 : Math.floor(expectedFr.length / 4);
         const maxErrorsAllowedEn = expectedEn.length <= 3 ? 0 : Math.floor(expectedEn.length / 4);
 
-        // 4. Validation (valide si bon en FR *OU* en EN)
         if (distanceFr <= maxErrorsAllowedFr || distanceEn <= maxErrorsAllowedEn) {
-            validateAnswer(target.code); // C'est validé !
+            validateAnswer(target.code);
         } else {
-            validateAnswer('WRONG_CODE'); // Trop d'erreurs
+            validateAnswer('WRONG_CODE');
         }
     };
 
-    // --- LOGIQUE CAMERA (Focus Auto) ---
     const cameraTarget = useMemo(() => {
         const isMicro = MICRO_STATES.includes(target.code);
         return {
@@ -94,7 +105,6 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
         };
     }, [target]);
 
-    // --- LOGIQUE IMAGE DRAPEAU ---
     const dynamicRatio = useMemo(() => {
         if (mode !== 'flag') return 1.5;
         const source = getFlagImage(target.code);
@@ -102,16 +112,13 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
         return (width && height) ? width / height : 1.5;
     }, [target, mode]);
 
-    // --- LOGIQUE COULEURS DE LA CARTE ---
     const getMapColors = () => {
         const colors: Record<string, string> = {};
 
-        // Highlight Cible (Sauf si mode flag pour ne pas tricher)
         if (mode !== 'flag') {
             colors[target.code] = THEME.colors.primary;
         }
 
-        // Feedback de correction (Vert/Rouge)
         Object.keys(mapFeedback).forEach(code => {
             if (mapFeedback[code] === 'correct') colors[code] = THEME.colors.success;
             if (mapFeedback[code] === 'wrong') colors[code] = THEME.colors.danger;
@@ -119,6 +126,13 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
 
         return colors;
     };
+
+    // 💡 3. LOGIQUE DYNAMIQUE DU PADDING BOTTOM
+    // On prend la valeur maximale entre la hauteur du clavier OU notre espace pour le bouton flottant (si actif et en erreur)
+    const dynamicPaddingBottom = Math.max(
+        keyboardHeight,
+        (status === 'error' && hasFloatingButton) ? 120 : 0
+    );
 
     return (
         <View style={styles.container}>
@@ -131,7 +145,6 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
                     placeholder={`IDENTIFIEZ ${mode === 'capital' ? 'LA CAPITALE' : 'LE TERRITOIRE'}`}
                 />
 
-                {/* 💡 AFFICHAGE DE LA BONNE RÉPONSE (Pendant l'animation de fin de tour) */}
                 {status !== 'playing' && (
                     <View style={[styles.feedbackBox, { borderColor: status === 'success' ? THEME.colors.success + '40' : THEME.colors.danger + '40', backgroundColor: status === 'success' ? THEME.colors.success + '10' : THEME.colors.danger + '10' }]}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -140,21 +153,20 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
                                 size={16}
                                 color={status === 'success' ? THEME.colors.success : THEME.colors.danger}
                             />
-                            <CyberText variant="caps" style={{ color: status === 'success' ? THEME.colors.success : THEME.colors.danger, letterSpacing: 1 }}>
+                            <MyText variant="caps" style={{ color: status === 'success' ? THEME.colors.success : THEME.colors.danger, letterSpacing: 1 }}>
                                 {status === 'success' ? 'EXACT' : 'RÉPONSE ATTENDUE'}
-                            </CyberText>
+                            </MyText>
                         </View>
-                        <CyberText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 4 }}>
+                        <MyText variant="h2" style={{ color: THEME.colors.text.primary, marginTop: 4 }}>
                             {expectedRawAnswer.toUpperCase()}
-                        </CyberText>
+                        </MyText>
                     </View>
                 )}
             </View>
 
-            {/* 2. ZONE VISUELLE */}
-            <View style={styles.visualArea}>
+            {/* 2. ZONE VISUELLE (Dynamiquement réduite par le clavier OU le bouton flottant) */}
+            <View style={[styles.visualArea, { paddingBottom: dynamicPaddingBottom }]}>
                 {mode === 'flag' ? (
-                    // MODE DRAPEAU : Gros drapeau centré
                     <View style={styles.bigFlagContainer}>
                         <Image
                             source={getFlagImage(target.code)}
@@ -163,7 +175,6 @@ export default function GameLevel3View({ engine, mode }: GameViewProps) {
                         />
                     </View>
                 ) : (
-                    // AUTRES MODES : Carte du monde focalisée
                     <View style={styles.mapWrapper}>
                         <InteractiveMap
                             countryColors={getMapColors()}
@@ -192,11 +203,10 @@ const styles = StyleSheet.create({
         zIndex: 20,
     },
 
-    // --- Styles du panneau de Feedback ---
     feedbackBox: {
         marginTop: 12,
         padding: 12,
-        borderRadius: 12,
+        borderRadius: THEME.metrics.radius.sm,
         borderWidth: 1,
         alignItems: 'center',
         justifyContent: 'center',
@@ -208,22 +218,19 @@ const styles = StyleSheet.create({
 
     visualArea: {
         flex: 1,
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
 
-    // --- Styles Carte ---
     mapWrapper: {
         flex: 1,
         width: '100%',
-        paddingTop: 80,
     },
 
-    // --- Styles Drapeau ---
     bigFlagContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 80,
+        paddingTop: 80, // On garde un peu d'espace en haut pour ne pas coller à l'input
     },
     flagLarge: {
         width: 280,

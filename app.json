@@ -1,29 +1,36 @@
 {
   "expo": {
-    "name": "unocculto-template",
-    "slug": "unocculto-template",
+    "name": "Unocculto Geography",
+    "slug": "unoccultogeo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo_white.png",
-    "scheme": "unoccultotemplate",
+    "icon": "./assets/images/icon.png",
+    "scheme": "unoccultogeo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/logo_white.png",
-      "bundleIdentifier": "com.antoinecd.unoccultotemplate"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.antoinecd.unoccultogeo"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo_white.png",
-        "backgroundColor": "#121212"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#09090B"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.antoinecd.unoccultotemplate"
+      "package": "com.antoinecd.unoccultogeo"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/logo_white.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
       "expo-router",
       [
         "@maplibre/maplibre-react-native",
@@ -39,10 +46,10 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#09090B",
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/images/icon.png",
+            "imageWidth": 200
           }
         }
       ],
@@ -55,8 +62,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2fd68470-fb45-41db-9bdc-b694933be91f"
+        "projectId": "f26735d9-ed73-4a59-a906-a2c36e622cd5"
       }
-    }
+    },
+    "owner": "antoinecd"
   }
 }

@@ -1,4 +1,4 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { useMemo } from 'react';
@@ -33,9 +33,9 @@ export default function ContinentStats({ memoryMap }: Props) {
 
     return (
         <View style={styles.container}>
-            <CyberText variant="caps" colorType="secondary" style={styles.title}>
+            <MyText variant="caps" colorType="secondary" style={styles.title}>
                 PROGRESSION PAR CONTINENT
-            </CyberText>
+            </MyText>
 
             <ScrollView
                 horizontal
@@ -44,16 +44,16 @@ export default function ContinentStats({ memoryMap }: Props) {
             >
                 {statsData.map(stat => (
                     <View key={stat.id} style={styles.card}>
-                        <CyberText variant="body" style={styles.cardTitle}>{stat.name}</CyberText>
+                        <MyText variant="body" style={styles.cardTitle}>{stat.name}</MyText>
 
                         <View style={styles.dataRow}>
-                            <CyberText variant="bodySmall" colorType="secondary">Explorés</CyberText>
-                            <CyberText variant="body" >{stat.visited} / {stat.total}</CyberText>
+                            <MyText variant="bodySmall" colorType="secondary">Explorés</MyText>
+                            <MyText variant="body" >{stat.visited} / {stat.total}</MyText>
                         </View>
 
                         <View style={styles.dataRow}>
-                            <CyberText variant="bodySmall" colorType="secondary">Maîtrisés</CyberText>
-                            <CyberText variant="body" style={{ color: THEME.colors.success }}>{stat.mastered}</CyberText>
+                            <MyText variant="bodySmall" colorType="secondary">Maîtrisés</MyText>
+                            <MyText variant="body" style={{ color: THEME.colors.success }}>{stat.mastered}</MyText>
                         </View>
 
                         {/* Petite barre de progression interne */}
@@ -73,18 +73,18 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 10,
-        paddingHorizontal: 20,
+        paddingHorizontal: THEME.paddings.horizontal,
         marginBottom: 12,
         letterSpacing: 1
     },
     scrollContent: {
-        paddingHorizontal: 20,
+        paddingHorizontal: THEME.paddings.horizontal,
         gap: 12,
     },
     card: {
         width: 140,
         backgroundColor: THEME.colors.glass.background,
-        borderRadius: 16,
+        borderRadius: THEME.metrics.radius.md,
         padding: 16,
         borderWidth: 1,
         borderColor: THEME.colors.glass.border,

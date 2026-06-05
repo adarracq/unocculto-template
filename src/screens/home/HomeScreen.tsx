@@ -1,28 +1,37 @@
-// src/screens/home/HomeScreen.tsx
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
 import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet';
 import WorldProgressMap from '@/components/organisms/WorldProgressMap';
 import LearningSheetContent from './components/LearningSheetContent';
 import RevisionSheetContent from './components/RevisionSheetContent';
 
-import StreakBadge from '@/components/molecules/StreakBadge';
+import PlayerStatsBadge from '@/components/molecules/PlayerStatsBadge';
+import OutOfTicketsModal from '@/components/organisms/OutOfTicketsModal';
+import { GameMode } from '@/constants/GameConfig'; // 💡 Import du type GameMode
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { useLearningStore } from '@/store/useLearningStore';
-import { useStreakStore } from '@/store/useStreakStore';
+import { useUserStore } from '@/store/useUserStore';
 import { THEME } from '@/theme/theme';
-import { AlertTriangle, CircleQuestionMark, RefreshCw, ShieldCheck } from 'lucide-react-native';
+import CountryDetailModal from '../profile/components/CountryDetailModal';
+import MapLegend from './components/MapLegend';
 
 export default function HomeScreen() {
     const router = useRouter();
-    const insets = useSafeAreaInsets(); // 💡 On récupère les bordures de l'écran (encoche, etc.)
+    const insets = useSafeAreaInsets();
 
-    const streakCount = useStreakStore(state => state.streakCount);
+    const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(null);
+    const [activeSheet, setActiveSheet] = useState<'learning' | 'revision' | null>(null);
+
+    const consumeTicket = useUserStore(state => state.consumeTicket);
+    const [showTicketModal, setShowTicketModal] = useState(false);
+
+    // 💡 Mise à jour : on gère deux types d'actions en attente (learning ou training)
+    const [pendingAction, setPendingAction] = useState<'learning' | 'training' | null>(null);
+    const [pendingTrainingParams, setPendingTrainingParams] = useState<{ mode: GameMode, level: number } | null>(null);
 
     const currentZoneId = useLearningStore((state) => state.currentLearningZone);
     const setCurrentLearningZone = useLearningStore((state) => state.setCurrentLearningZone);
@@ -52,10 +61,17 @@ export default function HomeScreen() {
     }, [memoryMap]);
 
     const urgentCount = urgentList.length;
+    const totalKnownCount = urgentList.length + consolidatedList.length + masteredList.length;
 
-    const [activeSheet, setActiveSheet] = useState<'learning' | 'revision' | null>(null);
+    // --- LOGIQUE DES ACTIONS ---
 
     const handleStartLearning = () => {
+        if (!consumeTicket()) {
+            setPendingAction('learning');
+            setShowTicketModal(true);
+            return;
+        }
+
         const nextBatch = useLearningStore.getState().getNewCountriesBatch(4);
         if (nextBatch.length > 0) {
             setActiveSheet(null);
@@ -63,81 +79,133 @@ export default function HomeScreen() {
         }
     };
 
+    const handleStartRevision = () => {
+        // La révision Leitner reste 100% gratuite (pas de consumeTicket)
+        setActiveSheet(null);
+        router.push('/learn/revision');
+    };
+
+    // 💡 Nouvelle logique pour l'entraînement libre avec ticket
+    const handleStartTraining = (mode: GameMode, level: number) => {
+        if (!consumeTicket()) {
+            setPendingAction('training');
+            setPendingTrainingParams({ mode, level });
+            setShowTicketModal(true);
+            return;
+        }
+
+        executeStartTraining(mode, level);
+    };
+
+    const executeStartTraining = (mode: GameMode, level: number) => {
+        setActiveSheet(null);
+        const knownCountryCodes = [...urgentList, ...consolidatedList, ...masteredList];
+        const batch = knownCountryCodes.join(',');
+
+        router.push({
+            pathname: '/arena/game',
+            params: {
+                mode,
+                level,
+                batch
+            }
+        });
+    };
+
+    const handleTicketSuccess = () => {
+        setShowTicketModal(false);
+
+        // On reprend l'action qui était en attente
+        if (pendingAction === 'learning') {
+            handleStartLearning();
+        } else if (pendingAction === 'training' && pendingTrainingParams) {
+            handleStartTraining(pendingTrainingParams.mode, pendingTrainingParams.level);
+        }
+
+        setPendingAction(null);
+        setPendingTrainingParams(null);
+    };
+
     return (
         <View style={styles.container}>
-            {/* CARTE EN BACKGROUND */}
             <WorldProgressMap
                 urgentCountries={urgentList}
                 consolidatedCountries={consolidatedList}
                 masteredCountries={masteredList}
+                onCountryPress={setSelectedCountryCode}
                 isBackground
             />
 
-            {/* HUD (Heads Up Display) - Couche transparente par-dessus la carte */}
             <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
 
-                {/* --- HEADER (Positionné tout en haut) --- */}
-                <View style={[styles.topHeader, { top: insets.top + 10 }]} pointerEvents="box-none">
-                    <StreakBadge count={streakCount} />
-
-                    <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => setActiveSheet('revision')}
-                        style={styles.legendBadge}
-                    >
-                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.danger + '15' }]}>
-                            <AlertTriangle size={16} color={THEME.colors.danger} />
-                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.danger }]}>{urgentCount}</CyberText>
-                        </View>
-
-                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.inProgress + '15' }]}>
-                            <RefreshCw size={16} color={THEME.colors.inProgress} />
-                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.inProgress }]}>{consolidatedList.length}</CyberText>
-                        </View>
-
-                        <View style={[styles.iconGroup, { backgroundColor: THEME.colors.success + '15' }]}>
-                            <ShieldCheck size={16} color={THEME.colors.success} />
-                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.success }]}>{masteredList.length}</CyberText>
-                        </View>
-
-                        <View style={[styles.iconGroup, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
-                            <CircleQuestionMark size={16} color={THEME.colors.text.disabled} />
-                            <CyberText variant="caps" style={[styles.legendText, { color: THEME.colors.text.disabled }]}>{leftCount}</CyberText>
-                        </View>
-                    </TouchableOpacity>
+                <View style={[styles.topHeader, { top: THEME.paddings.top + useSafeAreaInsets().top }]} pointerEvents="box-none">
+                    <PlayerStatsBadge />
                 </View>
 
-                {/* --- ACTIONS MINIMALISTES (Positionnées tout en bas) --- */}
                 <View style={styles.bottomActions} pointerEvents="box-none">
+                    <MapLegend
+                        mastered={masteredList.length}
+                        inProgress={consolidatedList.length}
+                        urgent={urgentCount}
+                        left={leftCount}
+                    />
                     <MyButton
                         title="APPRENTISSAGE"
                         subtitle={`Zone actuelle : ${currentZoneId}`}
-                        iconLeft="compass"
+                        iconLeft="ticket"
                         iconRight="chevron-forward"
                         onPress={() => setActiveSheet('learning')}
+                        variant='outline'
                     />
 
-                    {urgentCount > 0 && (
-                        <MyButton
-                            title="RÉVISIONS"
-                            subtitle={`${urgentCount} données critiques`}
-                            variant="danger"
-                            iconRight="chevron-forward"
-                            iconLeft="warning"
-                            onPress={() => setActiveSheet('revision')}
-                        />
-                    )}
+                    <MyButton
+                        title="RÉVISION"
+                        subtitle={urgentCount > 0 ? `${urgentCount} données critiques` : `${totalKnownCount} pays acquis`}
+                        variant={urgentCount > 0 ? "danger" : "default"}
+                        iconRight="chevron-forward"
+                        iconLeft="warning"
+                        onPress={() => setActiveSheet('revision')}
+                        disabled={totalKnownCount === 0 && urgentCount === 0}
+                    />
+
                 </View>
             </View>
 
-            {/* MODALES */}
             <BaseBottomSheet isVisible={activeSheet === 'learning'} onClose={() => setActiveSheet(null)} title="PROGRAMME D'APPRENTISSAGE">
-                <LearningSheetContent currentZoneId={currentZoneId} onSelectZone={setCurrentLearningZone} remainingCount={remainingCount} memoryMap={memoryMap} onStartLearning={handleStartLearning} />
+                <LearningSheetContent
+                    currentZoneId={currentZoneId}
+                    onSelectZone={setCurrentLearningZone}
+                    remainingCount={remainingCount}
+                    memoryMap={memoryMap}
+                    onStartLearning={handleStartLearning}
+                />
             </BaseBottomSheet>
 
             <BaseBottomSheet isVisible={activeSheet === 'revision'} onClose={() => setActiveSheet(null)} title="MÉMOIRE GLOBALE">
-                <RevisionSheetContent urgentCount={urgentCount} consolidationCount={consolidatedList.length} masteredCount={masteredList.length} onStartRevision={() => { setActiveSheet(null); router.push('/learn/revision'); }} />
+                <RevisionSheetContent
+                    urgentCount={urgentCount}
+                    consolidationCount={consolidatedList.length}
+                    masteredCount={masteredList.length}
+                    onStartRevision={handleStartRevision}
+                    onStartTraining={handleStartTraining}
+                />
             </BaseBottomSheet>
+
+            <CountryDetailModal
+                countryCode={selectedCountryCode}
+                visible={!!selectedCountryCode}
+                onClose={() => setSelectedCountryCode(null)}
+            />
+
+            <OutOfTicketsModal
+                visible={showTicketModal}
+                onClose={() => {
+                    setShowTicketModal(false);
+                    setPendingAction(null);
+                    setPendingTrainingParams(null);
+                }}
+                onSuccess={handleTicketSuccess}
+            />
         </View>
     );
 }
@@ -147,48 +215,17 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: THEME.colors.background
     },
-
-    // HEADER
     topHeader: {
-        position: 'absolute', // 💡 Sort du flux Flex, flotte en haut
+        position: 'absolute',
         left: 20,
         right: 20,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
-    legendBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6, // Espace propre entre les groupes d'icônes
-        backgroundColor: 'rgba(15, 15, 17, 0.95)',
-        padding: 6,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
-    },
-    iconGroup: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 14, // Capsules bien arrondies à l'intérieur
-    },
-    legendText: {
-        fontSize: 13,
-        marginTop: -1,
-    },
-
-    // BOTTOM ACTIONS
     bottomActions: {
-        position: 'absolute', // 💡 Flotte en bas, ne sera plus jamais écrasé !
-        bottom: 100,
+        position: 'absolute',
+        bottom: 40,
         left: 20,
         right: 20,
         gap: 16,

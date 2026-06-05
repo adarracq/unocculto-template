@@ -1,21 +1,27 @@
-import { CyberText } from '@/components/atoms/CyberText';
-import MyButton from '@/components/atoms/MyButton'; // 💡 Import du bouton Premium
+import MyButton from '@/components/atoms/MyButton';
+import { MyText } from '@/components/atoms/MyText';
 import InteractiveMap from '@/components/organisms/InteractiveMap';
-import { getFlagImage, REGION_CAMERAS } from '@/data/Countries';
+import { ALL_COUNTRIES, getFlagImage, REGION_CAMERAS } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import type { GameViewProps } from '../GeoGameScreen';
 
-export default function GameLevel2View({ engine, mode, regionCode }: GameViewProps) {
+interface Props extends GameViewProps {
+    hasFloatingButton?: boolean;
+}
+
+export default function GameLevel2View({ engine, mode, regionCode, hasFloatingButton = false }: Props) {
     const { currentQuestion, validateAnswer, mapFeedback, status } = engine;
     const [userSelection, setUserSelection] = useState<string | null>(null);
 
-    // 💡 BUG FIX : Purger la sélection à chaque nouvelle question pour éviter la surbrillance fantôme
     useEffect(() => {
-        setUserSelection(null);
-    }, [currentQuestion?.target?.code]); // Dépendance sur le code de la cible, pas juste l'objet
+        if (status === 'playing') {
+            setUserSelection(null);
+        }
+    }, [status, currentQuestion?.target?.code, mode]);
 
     // --- LOGIQUE DE LA CARTE ---
     const handleMapPress = (code: string) => {
@@ -31,12 +37,10 @@ export default function GameLevel2View({ engine, mode, regionCode }: GameViewPro
     const getMapColors = () => {
         const colors: Record<string, string> = {};
 
-        // Seulement si le statut est "playing" et que l'utilisateur a fait un choix délibéré
         if (status === 'playing' && userSelection) {
             colors[userSelection] = THEME.colors.primary;
         }
 
-        // Si le moteur a validé (Feedback visuel)
         if (mapFeedback && Object.keys(mapFeedback).length > 0) {
             Object.keys(mapFeedback).forEach(code => {
                 if (mapFeedback[code] === 'correct') colors[code] = THEME.colors.success;
@@ -48,6 +52,9 @@ export default function GameLevel2View({ engine, mode, regionCode }: GameViewPro
     };
 
     if (!currentQuestion) return null;
+
+    const expectedName = currentQuestion.target.name_fr.toUpperCase();
+    const selectedName = ALL_COUNTRIES.find(c => c.code === userSelection)?.name_fr.toUpperCase() || '';
 
     return (
         <View style={styles.container}>
@@ -76,43 +83,69 @@ export default function GameLevel2View({ engine, mode, regionCode }: GameViewPro
                                 source={getFlagImage(currentQuestion.target.code)}
                                 style={styles.flagMedium}
                             />
-                            <CyberText variant="caps" colorType="secondary" style={{ marginTop: 8 }}>
+                            <MyText variant="caps" colorType="secondary" style={{ marginTop: 8 }}>
                                 LOCALISEZ CE DRAPEAU
-                            </CyberText>
+                            </MyText>
                         </View>
                     ) : (
                         <View style={{ alignItems: 'center' }}>
-                            <CyberText variant="caps" colorType="secondary" style={{ marginBottom: 4 }}>
+                            <MyText variant="caps" colorType="secondary" style={{ marginBottom: 4 }}>
                                 CIBLE À LOCALISER
-                            </CyberText>
-                            <CyberText variant="h1" align="center" style={{ fontSize: 28 }}>
+                            </MyText>
+                            <MyText variant="h1" align="center" style={{ fontSize: 28 }}>
                                 {mode === 'capital'
                                     ? currentQuestion.target.capital?.toUpperCase()
-                                    : currentQuestion.target.name_fr.toUpperCase()}
-                            </CyberText>
+                                    : expectedName}
+                            </MyText>
                         </View>
                     )}
                 </View>
             </View>
 
-            {/* 3. HUD INFÉRIEUR (Bouton Premium) */}
+            {/* 3. HUD INFÉRIEUR */}
             <View style={styles.footerHud} pointerEvents="box-none">
                 <LinearGradient
                     colors={['rgba(5,5,7,0)', 'rgba(5,5,7,0.95)', THEME.colors.background]}
                     style={StyleSheet.absoluteFill}
                 />
 
-                <View style={styles.footerContent}>
-                    {status === 'playing' && (
-                        // 💡 Utilisation de MyButton
+                {/* 💡 CORRECTION ICI : Le paddingBottom augmente en cas d'erreur pour laisser la place au bouton */}
+                <View style={[styles.footerContent,
+                { paddingBottom: (status === 'error' && hasFloatingButton) ? 120 : 30 }
+                ]}>
+                    {status === 'playing' ? (
+                        // BOUTON DE JEU NORMAL
                         <MyButton
                             title={userSelection ? "CONFIRMER" : "SCANNEZ LA CARTE"}
-                            variant={userSelection ? 'gradient' : 'outline'}
+                            variant={'outline'}
                             iconLeft={userSelection ? "scan-circle-outline" : "finger-print-outline"}
                             iconRight={userSelection ? "arrow-forward" : undefined}
                             disabled={!userSelection}
                             onPress={() => userSelection && validateAnswer(userSelection)}
                         />
+                    ) : (
+                        // FEEDBACK VISUEL APRÈS VALIDATION
+                        <View style={[styles.feedbackBox, {
+                            borderColor: status === 'success' ? THEME.colors.success + '40' : THEME.colors.danger + '40',
+                            backgroundColor: status === 'success' ? THEME.colors.success + '10' : THEME.colors.danger + '10'
+                        }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Ionicons
+                                    name={status === 'success' ? 'checkmark-circle' : 'close-circle'}
+                                    size={24}
+                                    color={status === 'success' ? THEME.colors.success : THEME.colors.danger}
+                                />
+                                <MyText variant="h3" style={{ color: status === 'success' ? THEME.colors.success : THEME.colors.danger }}>
+                                    {status === 'success' ? 'CIBLE ATTEINTE' : 'CIBLE MANQUÉE'}
+                                </MyText>
+                            </View>
+
+                            {status === 'error' && (
+                                <MyText variant="bodySmall" style={{ color: THEME.colors.text.secondary, marginTop: 8, letterSpacing: 1 }}>
+                                    MAUVAISE REPONSE : <MyText variant="bodySmall" style={{ color: THEME.colors.text.primary }}>{selectedName}</MyText>
+                                </MyText>
+                            )}
+                        </View>
                     )}
                 </View>
             </View>
@@ -148,7 +181,7 @@ const styles = StyleSheet.create({
     flagMedium: {
         width: 120,
         height: 80,
-        borderRadius: 8,
+        borderRadius: THEME.metrics.radius.sm,
         borderWidth: 1,
         borderColor: THEME.colors.glass.borderHighlight,
     },
@@ -162,7 +195,15 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
     },
     footerContent: {
-        paddingHorizontal: 20,
-        paddingBottom: 40,
+        paddingHorizontal: THEME.paddings.horizontal,
+        // Le paddingBottom est maintenant géré dynamiquement dans le JSX
+    },
+    feedbackBox: {
+        paddingVertical: 16,
+        paddingHorizontal: THEME.paddings.horizontal,
+        borderRadius: THEME.metrics.radius.sm,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 });

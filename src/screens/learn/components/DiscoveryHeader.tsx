@@ -1,5 +1,5 @@
 // src/screens/learn/components/DiscoveryHeader.tsx
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { ProgressBar } from '@/components/atoms/ProgressBar';
 import { THEME } from '@/theme/theme';
 import { StyleSheet, View } from 'react-native';
@@ -16,12 +16,12 @@ export default function DiscoveryHeader({ phase, progress, remaining }: Props) {
     return (
         <View style={styles.container}>
             <View style={styles.topRow}>
-                <CyberText variant="caps" colorType="secondary" style={{ letterSpacing: 2 }}>
+                <MyText variant="caps" colorType="secondary" style={{ letterSpacing: 2 }}>
                     {phaseTitle}
-                </CyberText>
-                <CyberText variant="caps" style={{ color: THEME.colors.primary, fontSize: 10 }}>
+                </MyText>
+                <MyText variant="caps" style={{ color: THEME.colors.primary, fontSize: 10 }}>
                     {remaining} RESTANTS
-                </CyberText>
+                </MyText>
             </View>
             <ProgressBar progress={progress} color={THEME.colors.primary} />
         </View>

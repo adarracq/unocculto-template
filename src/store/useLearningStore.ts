@@ -48,11 +48,39 @@ export const useLearningStore = create<LearningState>()(
             setCurrentLearningZone: (zoneId) => set({ currentLearningZone: zoneId }),
 
             // Pioche 5 pays de la zone actuelle qui n'ont jamais été appris (Boîte 0)
-            getNewCountriesBatch: (limit = 5) => {
+            getNewCountriesBatch: (limit = 4) => {
                 const { currentLearningZone, memoryMap } = get();
+
+                // 1. Filtrer les pays par zone
                 const zoneCountries = ALL_COUNTRIES.filter(c => c.continentId === currentLearningZone);
+
+                // 2. Garder ceux qui n'ont pas encore été appris
                 const unlearned = zoneCountries.filter(c => !memoryMap[c.code] || memoryMap[c.code].box === 0);
-                return unlearned.slice(0, limit).map(c => c.code);
+
+                if (unlearned.length === 0) return [];
+
+                // 3. 💡 Choisir UNE "Graine" (Le point de départ aléatoire)
+                const seedIndex = Math.floor(Math.random() * unlearned.length);
+                const seedCountry = unlearned[seedIndex];
+
+                // 4. 💡 Calculer la distance brute entre deux pays (Pythagore simplifié)
+                const getDistance = (c1: any, c2: any) => {
+                    // Sécurité si un pays n'a pas de coordonnées dans vos données
+                    if (!c1.latitude || !c2.latitude) return 9999;
+
+                    const dLat = c1.latitude - c2.latitude;
+                    const dLon = c1.longitude - c2.longitude;
+                    // On ne s'embête pas avec la racine carrée, on veut juste les trier du plus petit au plus grand
+                    return (dLat * dLat) + (dLon * dLon);
+                };
+
+                // 5. 💡 Trier le tableau complet par proximité avec la Graine
+                const sortedByDistance = [...unlearned].sort((a, b) => {
+                    return getDistance(seedCountry, a) - getDistance(seedCountry, b);
+                });
+
+                // 6. Prendre les N premiers (La graine sera toujours en 1ère position car sa distance avec elle-même est 0)
+                return sortedByDistance.slice(0, limit).map(c => c.code);
             },
 
             // Initialise la première phase d'apprentissage (quand on clique sur "Découvrir 5 pays")
@@ -124,7 +152,7 @@ export const useLearningStore = create<LearningState>()(
                 const { currentLearningZone, memoryMap } = get();
                 const zoneCountries = ALL_COUNTRIES.filter(c => c.continentId === currentLearningZone);
                 return zoneCountries.filter(c => !memoryMap[c.code] || memoryMap[c.code].box === 0).length;
-            }
+            },
         }),
         {
             name: 'unocculto-learning-storage',

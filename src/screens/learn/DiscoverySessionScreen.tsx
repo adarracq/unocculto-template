@@ -1,7 +1,8 @@
 // src/screens/learn/DiscoverySessionScreen.tsx
-import { CyberText } from '@/components/atoms/CyberText';
 import MyButton from '@/components/atoms/MyButton';
+import { MyText } from '@/components/atoms/MyText';
 import { ProgressBar } from '@/components/atoms/ProgressBar';
+import { BaseBottomSheet } from '@/components/molecules/BaseBottomSheet'; // 💡 Import du BottomSheet
 import { ALL_COUNTRIES } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +11,9 @@ import { useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { useLearningStore } from '@/store/useLearningStore';
+import { feedbackService } from '@/utils/feedbackService';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DiscoveryGameController from './components/DiscoveryGameController';
 import LearningDossier from './components/LearningDossier';
 
@@ -40,39 +43,60 @@ export default function DiscoverySessionScreen() {
     };
 
     const handleFinishSession = () => {
-        router.push('/');
+        if (router.canGoBack()) {
+            console.log("Finishing discovery session, going back to previous screen.");
+            router.back();
+        } else {
+            console.warn("No previous screen to go back to, replacing with home screen.");
+            router.replace('/');
+        }
     };
 
     // ==========================================
-    // PHASE 3 : FIN DE SESSION
+    // PHASE 3 : FIN DE SESSION (BOTTOM SHEET)
     // ==========================================
     if (phase === 'finished' || sessionCountries.length === 0) {
         return (
-            <LinearGradient
-                colors={[THEME.colors.backgroundLight, THEME.colors.background]}
-                style={styles.container}
-            >
-                <View style={styles.finishedContent}>
-                    <View style={styles.successGlow}>
-                        <Ionicons name="checkmark-circle" size={80} color={THEME.colors.primary} />
-                    </View>
-                    <CyberText variant="h1" align="center" style={{ marginBottom: THEME.metrics.spacing.md }}>
-                        DONNÉES ASSIMILÉES
-                    </CyberText>
-                    <CyberText variant="body" colorType="secondary" align="center" style={{ paddingHorizontal: 40, marginBottom: 40 }}>
-                        Ces {sessionCountries.length} pays ont été ajoutés à vos révisions.
-                    </CyberText>
+            <View style={styles.container}>
+                {/* Background derrière le Modal */}
+                <LinearGradient
+                    colors={[THEME.colors.backgroundVeryLight, THEME.colors.background]}
+                    style={StyleSheet.absoluteFill}
+                />
 
-                    <View style={{ width: '100%', paddingHorizontal: 20 }}>
-                        <MyButton
-                            title="TERMINER"
-                            iconLeft="home-outline"
-                            iconRight="chevron-forward"
-                            onPress={handleFinishSession}
-                        />
+                <BaseBottomSheet
+                    isVisible={true}
+                    onClose={handleFinishSession}
+                    title="RAPPORT D'OPÉRATION"
+                >
+                    <View style={styles.finishedContent}>
+                        <View style={styles.successIconWrapper}>
+                            <Ionicons name="shield-checkmark" size={64} color={THEME.colors.primary} />
+                        </View>
+
+                        <MyText variant="caps" style={{ color: THEME.colors.primary, letterSpacing: 2, marginBottom: 8, textAlign: 'center' }}>
+                            SUCCÈS
+                        </MyText>
+
+                        <MyText variant="h1" align="center" style={{ marginBottom: 16 }}>
+                            DONNÉES ASSIMILÉES
+                        </MyText>
+
+                        <MyText variant="body" colorType="secondary" align="center" style={{ lineHeight: 22, marginBottom: 32 }}>
+                            {sessionCountries.length} nouveaux pays ont été intégrés à votre réseau neural et ajoutés au protocole de révision.
+                        </MyText>
+
+                        <View style={{ width: '100%' }}>
+                            <MyButton
+                                title="TERMINER"
+                                iconLeft="home"
+                                iconRight="chevron-forward"
+                                onPress={handleFinishSession}
+                            />
+                        </View>
                     </View>
-                </View>
-            </LinearGradient>
+                </BaseBottomSheet>
+            </View>
         );
     }
 
@@ -96,22 +120,22 @@ export default function DiscoverySessionScreen() {
     // ==========================================
     return (
         <View
-            style={styles.container}
+            style={[styles.container, { paddingTop: THEME.paddings.top + useSafeAreaInsets().top }]}
         >
             {/* HEADER : Navigation et Progression */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+                <TouchableOpacity onPress={() => { feedbackService.error(); handleFinishSession(); }} style={styles.closeBtn}>
                     <Ionicons name="close" size={24} color={THEME.colors.text.secondary} />
                 </TouchableOpacity>
 
                 <View style={styles.progressContainer}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <CyberText variant="caps" colorType="secondary" style={{ fontSize: 10, letterSpacing: 1 }}>
+                        <MyText variant="caps" colorType="secondary" style={{ fontSize: 10, letterSpacing: 1 }}>
                             ACQUISITION EN COURS
-                        </CyberText>
-                        <CyberText variant="caps" style={{ color: THEME.colors.primary, fontSize: 10 }}>
+                        </MyText>
+                        <MyText variant="caps" style={{ color: THEME.colors.primary, fontSize: 10 }}>
                             {currentIndex + 1} / {sessionCountries.length}
-                        </CyberText>
+                        </MyText>
                     </View>
                     <ProgressBar
                         progress={(currentIndex + 1) / sessionCountries.length}
@@ -133,11 +157,25 @@ export default function DiscoverySessionScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: THEME.paddings.top, paddingBottom: THEME.paddings.bottom },
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20 },
+    container: { flex: 1, paddingBottom: 60 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingTop: 10, paddingBottom: 20 },
     closeBtn: { width: 40, height: 40, justifyContent: 'center' },
-    progressContainer: { flex: 1, paddingHorizontal: 16 },
+    progressContainer: { flex: 1 },
 
-    finishedContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    successGlow: { marginBottom: 30, shadowColor: THEME.colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 30 }
+    // --- ÉCRAN DE FIN ---
+    finishedContent: {
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    successIconWrapper: {
+        width: 100,
+        height: 100,
+        borderRadius: THEME.metrics.radius.round,
+        backgroundColor: THEME.colors.primary + '15',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: THEME.colors.primary + '40',
+    }
 });

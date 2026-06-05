@@ -1,4 +1,4 @@
-import { CyberText } from '@/components/atoms/CyberText';
+import { MyText } from '@/components/atoms/MyText';
 import { getFlagImage } from '@/data/Countries';
 import { THEME } from '@/theme/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ export default function CountryListItem({ country, memoryData, onPress }: Countr
     // Configuration par défaut
     let titleColor: string = THEME.colors.text.primary;
     let subtitleText: string = 'Non exploré';
+    let subtitleColor: string = THEME.colors.text.disabled;
     let borderColor: string = THEME.colors.glass.border;
     let backgroundColor: string = THEME.colors.glass.background;
 
@@ -30,16 +31,19 @@ export default function CountryListItem({ country, memoryData, onPress }: Countr
     if (isMastered) {
         titleColor = THEME.colors.success;
         subtitleText = 'Maîtrisé';
+        subtitleColor = THEME.colors.success;
         borderColor = THEME.colors.success + '25';
         badgeIcon = 'checkmark-sharp';
         badgeBg = THEME.colors.success;
     } else if (isUrgent) {
         subtitleText = 'À réviser';
+        subtitleColor = THEME.colors.danger;
         borderColor = THEME.colors.danger + '25';
         badgeIcon = 'warning';
         badgeBg = THEME.colors.danger;
     } else if (isLearning) {
         subtitleText = `Apprentissage (Niv ${memoryData.box})`;
+        subtitleColor = THEME.colors.inProgress;
         borderColor = THEME.colors.inProgress + '25';
         badgeIcon = 'sync';
         badgeBg = THEME.colors.inProgress;
@@ -65,13 +69,17 @@ export default function CountryListItem({ country, memoryData, onPress }: Countr
 
             {/* 2. Textes alignés proprement */}
             <View style={styles.textContainer}>
-                <CyberText variant="body" style={{ fontFamily: 'Jakarta-Bold', color: titleColor, fontSize: 15, letterSpacing: 0.5 }}>
+                <MyText variant="body" style={{ fontFamily: 'Jakarta-Bold', color: titleColor, fontSize: 15, letterSpacing: 0.5 }}>
                     {country.name_fr.toUpperCase()}
-                </CyberText>
-
-                <CyberText variant="bodySmall" colorType="secondary" style={{ marginTop: 2 }}>
-                    {country.capital || 'Capitale inconnue'}  •  {subtitleText}
-                </CyberText>
+                </MyText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <MyText variant="bodySmall" colorType="secondary">
+                        {country.capital || 'Capitale inconnue'}  •
+                    </MyText>
+                    <MyText variant="bodySmall" style={{ color: subtitleColor }}>
+                        {subtitleText}
+                    </MyText>
+                </View>
             </View>
 
             {/* 3. Chevrons */}
@@ -86,7 +94,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 16,
         padding: 16,
-        borderRadius: 16,
+        borderRadius: THEME.metrics.radius.md,
         borderWidth: 1,
     },
     avatarContainer: {
@@ -97,7 +105,7 @@ const styles = StyleSheet.create({
     flag: {
         width: 46,
         height: 46,
-        borderRadius: 23,
+        borderRadius: THEME.metrics.radius.round,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)'
     },
@@ -107,7 +115,7 @@ const styles = StyleSheet.create({
         right: -2,
         width: 18,
         height: 18,
-        borderRadius: 9,
+        borderRadius: THEME.metrics.radius.round,
         justifyContent: 'center',
         alignItems: 'center',
         // Contour de la couleur du fond (pour créer l'effet de "découpe" sur le drapeau, style Apple)
